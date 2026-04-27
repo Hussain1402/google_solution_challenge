@@ -28,13 +28,24 @@ class FirestoreService {
   }
 
   /// Update stock (used for stock-in / stock-out).
+  /// Also recalculates days_of_runway client-side since the Firestore trigger
+  /// (recalcRunway) only fires when the Firestore emulator is running.
   Future<void> updateStock({
     required String skuId,
     required int newStock,
     required String updatedBy,
+    required double avgDailyConsumption,
+    required int reservedStock,
   }) async {
+    // Recalculate runway using the PRD formula
+    double newRunway = 999.0;
+    if (avgDailyConsumption > 0) {
+      newRunway = (newStock - reservedStock) / avgDailyConsumption;
+    }
+
     await _db.collection('inventory').doc(skuId).update({
       'current_stock': newStock,
+      'days_of_runway': newRunway,
       'last_updated': FieldValue.serverTimestamp(),
       'last_updated_by': updatedBy,
     });
@@ -74,9 +85,12 @@ class FirestoreService {
     return _db
         .collection('donation_drives')
         .where('status', isEqualTo: 'ACTIVE')
-        .orderBy('runway_at_creation_days', descending: false)
         .snapshots()
-        .map((snap) => snap.docs.map((d) => DriveModel.fromFirestore(d)).toList());
+        .map((snap) {
+          final drives = snap.docs.map((d) => DriveModel.fromFirestore(d)).toList();
+          drives.sort((a, b) => a.runwayAtCreationDays.compareTo(b.runwayAtCreationDays));
+          return drives;
+        });
   }
 
   /// Get a single drive.

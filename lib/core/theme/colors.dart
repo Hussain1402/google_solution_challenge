@@ -1,21 +1,21 @@
 import 'dart:ui';
 
-/// PRD-mandated color constants — do not modify without PRD change.
-const kBlue       = Color(0xFF1A56A0);
-const kMidBlue    = Color(0xFF2E75B6);
-const kLightBlue  = Color(0xFFD6E4F7);
-const kTeal       = Color(0xFF0D7377);
-const kLightTeal  = Color(0xFFD1F0EE);
-const kGreen      = Color(0xFF1A7A4A);
-const kLightGreen = Color(0xFFD6F0E3);
-const kAmber      = Color(0xFFB45309);
-const kLightAmb   = Color(0xFFFEF3C7);
-const kRed        = Color(0xFF991B1B);
-const kLightRed   = Color(0xFFFEE2E2);
-const kGray       = Color(0xFF374151);
-const kMidGray    = Color(0xFF9CA3AF);
-const kLightGray  = Color(0xFFF3F4F6);
+/// Design System Color Constants (ReliefHub AI)
+const kBlue       = Color(0xFF1A56A0); // Trust Blue
+const kMidBlue    = Color(0xFF265EA8); // Surface Tint
+const kLightBlue  = Color(0xFFD6E3FF); // Primary Fixed
+const kTeal       = Color(0xFF0D7377); // Operational Teal
+const kLightTeal  = Color(0xFF9DF0F4); // Secondary Fixed
+const kGreen      = Color(0xFF10B981); // Safe Green
+const kLightGreen = Color(0xFFD1FAE5); // Abundance Surface
+const kAmber      = Color(0xFFF59E0B); // Warning Amber
+const kLightAmb   = Color(0xFFFEF3C7); // Warning Bg
+const kRed        = Color(0xFF991B1B); // Urgent Red
+const kLightRed   = Color(0xFFFEE2E2); // Scarcity Surface
+const kGray       = Color(0xFF424751); // On Surface Variant
+const kMidGray    = Color(0xFF6B7280); // Neutral Grey
+const kLightGray  = Color(0xFFE2E2E9); // Surface Container Highest
 
-/// WARNING-level runway colours (not in main palette).
-const kWarningBg   = Color(0xFFFFEDD5);
-const kWarningText = Color(0xFFEA580C);
+/// WARNING-level runway colours
+const kWarningBg   = Color(0xFFFEF3C7);
+const kWarningText = Color(0xFFF59E0B);

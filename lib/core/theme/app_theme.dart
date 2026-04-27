@@ -19,29 +19,29 @@ class AppTheme {
       textTheme: GoogleFonts.interTextTheme(),
       appBarTheme: AppBarTheme(
         centerTitle: false,
-        backgroundColor: Colors.white,
-        foregroundColor: kGray,
+        backgroundColor: kBlue,
+        foregroundColor: Colors.white,
         elevation: 0,
         scrolledUnderElevation: 1,
         titleTextStyle: GoogleFonts.inter(
           fontSize: 20,
           fontWeight: FontWeight.w600,
-          color: kGray,
+          color: Colors.white,
         ),
       ),
       cardTheme: CardThemeData(
         elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(8),
           side: BorderSide(color: kLightGray),
         ),
         color: Colors.white,
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: kLightGray,
+        fillColor: const Color(0xFFF9FAFB), // Surface Background
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(8),
           borderSide: BorderSide.none,
         ),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -52,7 +52,7 @@ class AppTheme {
           foregroundColor: Colors.white,
           minimumSize: const Size(double.infinity, 52),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(8),
           ),
           textStyle: GoogleFonts.inter(
             fontSize: 16,

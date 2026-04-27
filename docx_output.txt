@@ -1,0 +1,1378 @@
+ReliefHub
+ AI
+Project Requirements Document & Implementation Plan
+Google Solution Challenge 2026
+SDG 2: Zero 
+Hunger  |
+  SDG 12: Responsible Consumption
+Version 
+1.0  |
+  April 2026
+Role: Senior Product Manager & Lead Solutions Architect
+Tech Stack: 
+Flutter  ·
+  
+Firebase  ·
+  Vertex AI (Gemini 1.5 
+Pro)  ·
+  Google Maps 
+SDK  ·
+  Google Earth Engine
+1. Executive Summary
+ReliefHub
+ AI is a closed-loop local resource management platform designed for a single NGO Hub. It shifts humanitarian aid from reactive distribution to proactive resource balancing by combining real-time inventory management, AI-driven scarcity prediction, a two-mode response system, and a self-service donor platform for future needs.
+1.1 The Problem
+NGOs operating at the neighborhood level consistently face two simultaneous failures:
+Scarcity Blindness: 
+They learn about shortages only after beneficiaries arrive empty-handed, with no forward-looking signal.
+Abundance Waste: 
+Donors in resource-rich neighborhoods give randomly — often duplicating items already in excess while critical goods run out.
+Reactive Operations: 
+Staff spend time reacting to crises rather than anticipating them, leading to burnout and inefficiency.
+1.2 The Solution
+ReliefHub
+ AI Core Concept
+A geo-sectored, AI-powered resource loop with two distinct response modes:  Mode 1 — Immediate Response: When Scout identifies CRITICAL or 
+HIGH-risk
+ sectors, the NGO distributes directly from its own Storehouse inventory. No donation drive is 
+created;
+ the Ledger handles fulfilment and updates runway in real time.  Mode 2 — Proactive Replenishment: When Scout identifies MONITOR or WARNING runway trajectories (predicted shortfall, not yet critical), The Replenisher creates a Donation Drive visible in the Donor app. Donors browse and pledge at their own pace for upcoming needs. No urgency push is sent to donors.
+1.3 SDG Alignment
+SDG
+Target
+ReliefHub
+ AI Contribution
+SDG 2: Zero Hunger
+2.1 Universal access to food; 2.C market stability
+Predicts and prevents food scarcity windows in neighborhoods before they occur
+SDG 12: Responsible Consumption
+12.3 Halve global food waste; 12.8 awareness
+Redirects surplus donations to deficit areas, eliminating over-supply waste
+2. System Architecture Overview
+ReliefHub
+ AI is built on a four-pillar architecture, each pillar mapping directly to a named module within the application.
+Module
+Codename
+Primary Technology
+Core Function
+Trend Analyst
+The Scout
+Vertex AI Gemini 1.5 Pro + 
+Firestore
+ Internal Signals
+Predicts resource scarcity by 
+analysing
+ internal consumption trends; uses external signals only as secondary event triggers
+Inventory Manager
+The Ledger
+Firebase 
+Firestore
+ + Cloud Functions
+Real-time storehouse stock tracking with automated Runway calculations
+Geo Visualizer
+The Grid
+Google Maps SDK + Google Earth Engine
+Divides the NGO radius into 5x5 sector grid with scarcity/abundance zoning
+Campaign Engine
+The Replenisher
+Firebase 
+Firestore
+ + Cloud Functions + FCM (Admin only)
+Creates proactive Donation Drives for predicted future shortfalls; donor app is a self-service pull feed; FCM notifications go to NGO Admin only
+2.1 Tech Stack Specification
+Layer
+Technology
+Version / Tier
+Purpose
+Frontend
+Flutter + Material 3
+Flutter 3.x
+Cross-platform mobile UI
+Auth
+Firebase Authentication
+Firebase v10+
+Role-based access (Admin / Staff / Donor)
+Database
+Firebase 
+Firestore
+Native Mode
+Real-time inventory & sector data store
+Functions
+Firebase Cloud Functions
+Node.js 20
+Business logic, Gemini calls, Admin FCM alerts, runway calculations
+Intelligence
+Vertex AI – Gemini 1.5 Pro
+gemini-1.5-pro-001
+Scarcity prediction, sector reasoning, runway calc
+Notifications
+Firebase Cloud Messaging
+FCM v1 API
+Push alerts to NGO Admin only — inventory warnings, new 
+x
+HIGH
+-risk sector flags, drive fulfilment updates
+Geospatial
+Google Maps SDK + Earth Engine
+Maps SDK 6.x
+Sector grid rendering, zone 
+colouring
+Search Data
+Google Custom Search / Weather API
+REST API (optional)
+Secondary event triggers only — causes Scout re-scan; does not influence risk score directly
+3. Feature Breakdown
+3.1 The Scout — AI Trend Analysis Engine
+Mission
+Detect early-warning signals of resource scarcity across the NGO's 25 sectors before any beneficiary reports a shortage. The Scout uses internal 
+Firestore
+ data (consumption trends, runway acceleration, check-in spikes) as the primary 
+signal source —
+ processed by Gemini 1.5 Pro. External signals (weather events, local news) serve only as secondary triggers that initiate an unscheduled Scout re-scan, never as direct inputs to the risk score.
+3.1.1 Signal Sources — Primary (Internal)
+All primary signals are sourced directly from 
+Firestore
+ and are ground-truth, sector-specific, and already structured — making Gemini's risk assessment anchored to verifiable operational data rather than uncertain external coverage.
+Consumption Acceleration: 
+14-day rolling 
+avg_daily_consumption
+ per SKU compared against the prior 14-day period. A >25% acceleration in any category flags a trend anomaly for that sector
+Runway Trajectory: 
+Rate of runway decline per SKU — a SKU dropping from 20 days to 12 days runway in 7 days is a stronger signal than one sitting at 8 days stable
+Beneficiary Check-in Spike: 
+Unusual increase in beneficiary registrations or distribution requests logged to a sector within a rolling 7-day window
+Stock-out Event Frequency: 
+Number 
+of times a
+ SKU hit zero 
+stock
+ in the last 30 days for a given sector — a pattern indicator, not just a current-state snapshot
+Distribution Request Gaps: 
+Categories not requested at all in a sector for an unusually long period — may indicate beneficiaries have given up seeking aid (silent scarcity)
+3.1.2 Signal Sources — Secondary (External Event Triggers Only)
+External signals do NOT directly influence the risk score Gemini produces. Their sole role is to trigger an unscheduled Scout re-
+scan
+ outside the 6-hour 
+cron
+ window when a relevant event is detected. Gemini then reasons from internal data as normal.
+Weather API flag: 
+Extreme weather event (flood, drought, heatwave) detected in the NGO's district — triggers immediate Scout re-scan for all affected sectors
+Google Custom Search: 
+Keyword alert for '[City] food shortage', '[District] flood', '[Area] market 
+closure' —
+ if matched, triggers a re-scan for the relevant geographic cluster of sectors only
+Earth Engine NDVI delta: 
+Significant vegetation index 
+drop
+ in agricultural zones adjacent to the NGO radius — optional enrichment, triggers re-scan if delta exceeds threshold
+Design Rationale
+A news headline about 'Pune food shortage' cannot tell you whether Sector B3 or Sector D1 is affected — it is geographically imprecise and may lag reality by days. Internal consumption data, by contrast, is sector-specific and real-time. This architecture ensures Gemini's conclusions are always defensible with traceable 
+Firestore
+ evidence, not press coverage.
+3.1.3 Gemini 1.5 Pro Agent Logic
+A scheduled Cloud Function (runs every 6 hours) assembles a structured prompt payload and sends it to Gemini 1.5 Pro via the Vertex AI API. The prompt follows this structure:
+Gemini Prompt Template
+SYSTEM: You are a humanitarian resource analyst for a local NGO covering [City], [District]. Your role is to assess structured internal operational data and output a JSON risk assessment for 5 resource categories across the NGO's sector grid. 
+Base
+ your assessment ONLY on the internal data provided. External context (if present) may trigger this analysis but must not override data-driven conclusions.  PRIMARY INPUT DATA (internal — ground truth): - Consumption acceleration per SKU per sector (14d vs prior 14d): {
+consumption_delta_json
+} - Runway trajectory per SKU (days remaining + rate of decline): {
+runway_trajectory_json
+} - Beneficiary check-in spike data by sector (7d rolling): {
+checkin_spike_json
+} - Stock-out event frequency by SKU (last 30 days): {
+stockout_freq_json
+} - Distribution request gap flags (silent scarcity indicators): {
+request_gap_json
+}  SECONDARY CONTEXT (external — for awareness only, do not use as primary evidence): - Weather event flag: {
+weather_event
+} - Search alert triggered: {
+search_alert_text
+}  OUTPUT FORMAT (strict JSON only): {"
+sector_risk
+": [{"
+sector_id
+": "A1", "category": "
+basic_necessities
+", "
+risk_level
+": "HIGH|MEDIUM|LOW", "
+primary_evidence
+": "consumption up 38% over 14d, runway declining at 1.2d/day", "reasoning": "...", "
+predicted_runway_delta_days
+": -3}]}
+3.1.4 Output Actions
+CRITICAL / HIGH Risk: 
+Immediately flags sector in 
+Firestore
+; NGO Admin receives FCM alert; NGO dispatches from existing Storehouse inventory via The Ledger — no donation drive is created for urgent needs
+MONITOR / WARNING Risk (runway 7–30 days): 
+Triggers 
+The
+ Replenisher to create a Donation Drive for the predicted future shortfall; drive appears in donor app feed; no push notification sent to donors
+MEDIUM Risk: 
+Updates sector 
+colour
+ on The Grid to amber, logs reasoning for Admin review
+LOW Risk: 
+No action, stored in analytics log
+3.1.5 Scout Data Flow
+Step
+Actor
+Input
+Output
+1
+Cloud Scheduler
+Cron trigger (6h interval) OR external event webhook
+Initiates Scout Cloud Function
+2
+Scout Cloud Function
+Queries 
+Firestore
+: consumption deltas, runway trajectories, check-in spikes, stock-out frequency, request gaps per sector
+Structured internal signal bundle (JSON) per sector
+3
+Vertex AI (Gemini 1.5 Pro)
+Signal bundle + system prompt
+JSON risk assessment per sector + category
+4
+Firestore
+ Write
+Gemini risk JSON
+Updates /
+sectors/{id}/
+risk_status
+ in real-time
+5
+The Replenisher (trigger)
+Firestore
+ 
+onWrite
+ event (MONITOR or WARNING runway)
+Creates Donation Drive for future need; visible in donor app pull feed; FCM sent to Admin only
+3.2 The Ledger — Inventory Management System
+Mission
+Provide real-time visibility into the NGO Storehouse's stock levels across all 5 resource categories and 30+ 
+SKUs, and
+ calculate how many days of supply remain for each — the 'Days of Runway' metric.
+3.2.1 Inventory Category & SKU Taxonomy
+The inventory is structured in a two-level hierarchy: Category → SKU. This enables both high-level trend analysis (by Gemini) and granular operational tracking (by staff).
+Category ID
+Category Name
+Example SKUs
+Unit
+CAT-01
+Basic Necessities
+Rice (5kg bag), Lentils (1kg), Cooking Oil (1L), Sugar (1kg), Salt (500g), Wheat Flour (5kg), Canned Chickpeas, Fortified Biscuits
+Bags, 
+Litres
+, Units
+CAT-02
+Operational Tools
+Tarpaulins (4x6m), Rope (50m roll), Solar Lanterns, Portable Stoves, Fuel Canisters, Water Purification Tablets
+Units, Rolls, Pieces
+CAT-03
+Household & Structural
+Blankets, Sleeping Mats, Mosquito Nets, Plastic Sheeting (1m roll), Basic Toolkit (hammer, nails), Buckets (10L)
+Units, 
+Metres
+, Sets
+CAT-04
+Medical Goods
+First Aid Kits, ORS Sachets, Paracetamol (strip), Antiseptic Solution (250ml), Gauze Bandages, Gloves (box of 50), Thermometers
+Kits, Strips, Bottles, Boxes
+CAT-05
+Hygiene Goods
+Soap Bars, Sanitary Pads (pack), Toothbrushes, Toothpaste, Hand 
+Sanitiser
+ (500ml), Laundry Detergent (1kg), Disposable Razors, Combs
+Bars, Packs, Tubes, Bottles
+3.2.2 
+Firestore
+ Inventory Schema
+Firestore
+ Collection: /
+inventory/{
+sku_id
+}
+{   
+sku_id
+: "RICE-5KG",   
+category_id
+: "CAT-01",   
+category_name
+: "Basic Necessities",   
+sku_name
+: "Rice (5kg bag)",   unit: "bag",   
+current_stock
+: 142,   
+reserved_stock
+: 20,   
+reorder_threshold
+: 30,   
+avg_daily_consumption
+: 8.5,   
+days_of_runway
+: 14.4,   // auto-calculated field   
+last_updated
+: Timestamp,   
+last_updated_by
+: "uid_staff_001",   
+location_in_storehouse
+: "Shelf A-3" }
+3.2.3 Days of Runway Calculation
+Runway Formula
+Days of Runway = (
+current_stock
+ - 
+reserved_stock
+) / 
+avg_daily_
+consumption
+  Runway
+ is recalculated by a 
+Firestore
+ 
+onWrite
+ Cloud Function every time stock is updated. 
+avg_daily_consumption
+ is a 14-day rolling average computed nightly by a scheduled function.  Runway Status Thresholds:   > 30 
+days  →
+  SAFE (
+green)   
+15-30 days 
+→  MONITOR
+ (
+amber)   
+7-14 
+days  →
+  WARNING (
+orange)   
+< 7 days   
+→  CRITICAL
+ (
+red) —
+ auto-triggers Scout alert
+3.2.4 Ledger Features
+Stock-in Entry: 
+Staff scans or 
+enters
+ received donations; 
+Firestore
+ updated in real-time
+Stock-out Entry: 
+Distribution events decrement stock and update rolling consumption average
+Bulk Import: 
+CSV upload via Cloud Function for large donation batches
+Runway Dashboard: 
+Flutter UI shows all categories sorted by lowest runway days — critical items at top
+Audit Trail: 
+Every write logged to /
+inventory_
+log
+/{
+event_id
+} with timestamp, user, delta
+Low-Stock Alert: 
+FCM push to NGO Admin only when any SKU crosses the 
+reorder_threshold
+; Admin decides whether to draw from storehouse or wait for drive fulfilment
+3.3 The Grid — Geospatial Zone Management
+Mission
+Divide the NGO's operating radius into a 5x5 sector grid (25 cells) rendered on Google 
+Maps, and
+ classify each sector as Scarcity Zone (red), Neutral (grey), or Abundance Zone (green) based on Gemini's risk assessment and synthetic/real demographic data.
+3.3.1 Grid Architecture
+Grid Size: 
+5 columns x 5 rows = 25 named sectors (A1 through E5)
+Coverage Radius: 
+Configurable; default 5km radius from the NGO Hub 
+center
+ point
+Cell Size: 
+~1km x 1km per cell (adjustable based on coverage radius setting)
+Anchor Point: 
+NGO Hub coordinates set at app 
+initialisation
+ by Admin
+Rendering: 
+Google Maps Ground
+ 
+Overlay / Polygon API; each sector is a clickable polygon
+3.3.2 Sector 
+Firestore
+ Schema
+Firestore
+ Collection: /
+sectors/{
+sector_id
+}
+{   
+sector_id
+: "B3",   label: "
+Kasba
+ Peth - North",   
+center_lat
+: 18.5204,   
+center_lng
+: 73.8567,   
+bounding_box
+: { ne: {...}, 
+sw
+: {...} },   
+zone_status
+: "SCARCITY | NEUTRAL | ABUNDANCE",   
+risk_scores
+: {     CAT_01_basic: "HIGH",     CAT_02_operational: "LOW",     CAT_03_household: "MEDIUM",     CAT_04_medical: "LOW",     CAT_05_hygiene: "HIGH"   },   
+population_estimate
+: 4200,   
+registered_beneficiaries
+: 312,   
+registered_donors
+: 87,   
+last_scout_run
+: Timestamp,   
+active_drive_id
+: "DRIVE-2026-047"  // null if none }
+3.3.3 Zone Classification Logic
+Zone
+Colour
+Trigger Condition
+Action Taken
+SCARCITY
+Red (opacity 0.5)
+2+ categories at HIGH risk OR any 1 category at CRITICAL runway (< 7 days)
+Admin receives FCM alert; NGO fulfils from Storehouse inventory directly via Ledger stock-out event
+NEUTRAL
+Grey (opacity 0.3)
+Mixed risk signals; no category at HIGH
+Monitoring only; Scout continues scanning on 6h schedule
+ABUNDANCE
+Green (opacity 0.5)
+All categories LOW risk; donor density above median
+No immediate 
+action;
+ sector noted as potential future donor source in Replenisher drive metadata
+3.4 The Replenisher — Proactive Donation Drive Engine
+Mission
+The Replenisher operates exclusively on predicted future shortfalls — never on active crises. When The Scout identifies a MONITOR or WARNING runway trajectory (7–30 days remaining), The Replenisher creates a Donation Drive that appears in the donor app as a 
+browseable
+ feed. Donors contribute at their own pace, on their own schedule. There is no urgency push; the design philosophy is pre-emptive pipeline filling, not crisis crowdsourcing.
+Two-Mode Response — Design Rationale
+Mode 1 (CRITICAL / HIGH): NGO draws from its own Storehouse immediately. Initiating a donation drive 
+at the moment
+ of crisis is impractical — collection, transport, and sorting take days the NGO does not have. The Ledger handles this entirely.  Mode 2 (MONITOR / WARNING): With 7–30 days of runway remaining, there is enough time for a donation drive to be created, promoted, fulfilled, and restocked before the situation becomes critical. This is the only window where donor contribution is operationally meaningful.
+3.4.1 Drive Creation Flow
+Scout flags SKU 'Rice (5kg)' in CAT-01 as MONITOR — runway trajectory declining from 28d to 18d over 14 days
+Cloud Function 
+updateZoneStatus
+ writes WARNING flag to /
+inventory/{
+sku_id
+}
+Replenisher Cloud Function 
+createDonationDrive
+ fires; calls Gemini with runway data to generate drive title, description, and quantity targets
+Drive document written to /
+donation_
+drives
+/{
+drive_id
+} with status: ACTIVE and 
+urgency_mode
+: PROACTIVE
+Drive appears in donor app browse feed — no push notification sent to donors
+Admin receives FCM alert: 'New proactive drive created: Rice (5
+kg) —
+ 18 days runway remaining'
+Donors browse, select, and pledge items at their own pace within the drive window
+On fulfilment: stock written to Ledger; runway recalculated; drive status → FULFILLED
+3.4.2 Donation Drive 
+Firestore
+ Schema
+Firestore
+ Collection: /
+donation_
+drives
+/{
+drive_id
+}
+{   
+drive_id
+: "DRIVE-2026-047",   
+created_at
+: Timestamp,   
+urgency_mode
+: "PROACTIVE",  // always PROACTIVE — drives are never created for CRITICAL needs   
+trigger_sku_id
+: "RICE-5KG",   
+trigger_category_id
+: "CAT-01",   
+runway_at_creation_days
+: 18,   
+target_items
+: [     { 
+sku_id
+: "RICE-5KG", 
+qty_needed
+: 80, 
+qty_pledged
+: 0, 
+qty_received
+: 0 },     { 
+sku_id
+: "COOKING-OIL-1L", 
+qty_needed
+: 40, 
+qty_pledged
+: 0, 
+qty_received
+: 0 }   ],   
+drop_off_point
+: { name: "NGO Hub Main Store", 
+lat
+: 18.5210, 
+lng
+: 73.8560 },   
+drive_window_days
+: 14,   
+expires_at
+: Timestamp,   status: "ACTIVE | FULFILLED | EXPIRED",   
+gemini_description
+: "Rice stocks are projected to run low in 18 days...",   
+fulfilled_at
+: null }
+3.4.3 Donor App — Self-Service Pull Model
+Browse Feed: 
+Donors open the app and see a list of all ACTIVE drives sorted by urgency (lowest runway days first); no push notifications
+Drive Detail: 
+Each drive shows: item needed, quantity remaining to be pledged, drop-off location on map, days remaining in drive window, and Gemini's plain-language explanation of the upcoming need
+Pledge Action: 
+Donor selects items and quantities; 
+qty_pledged
+ increments in 
+Firestore
+ in real time
+Drop-off Confirmation: 
+After physical drop-off at NGO Hub, Staff logs the receipt via Ledger stock-in; 
+qty_received
+ updates and Runway recalculates automatically
+Drive Lifecycle: 
+ACTIVE → FULFILLED (
+qty_received
+ >= 
+qty_needed
+) or EXPIRED (
+drive_window
+ exceeded); expired drives logged for analytics; Admin notified on both outcomes via FCM
+3.4.4 Notification Rules — Summary
+Event
+NGO Admin (FCM)
+SKU crosses CRITICAL runway (< 7d)
+Yes — immediate alert
+SKU crosses WARNING runway (7–14d)
+Yes — advisory alert
+New proactive drive created
+Yes — drive summary
+Drive fulfilled
+Yes — fulfilment notice
+Drive expired unfulfilled
+Yes — escalation alert
+Scout 
+HIGH-risk
+ sector flagged
+Yes — sector risk alert
+The notification table needs to be in order of high to low risk priority
+4. Synthetic Data Plan — Prototype Phase
+Purpose
+Since live scarcity detection requires months of operational data, the prototype uses a carefully designed synthetic dataset that mimics real-world NGO conditions. All synthetic data is seeded into 
+Firestore
+ via a one-time script and rendered on a real Google Maps grid using actual Pune (Pimpri-Chinchwad) coordinates as the reference location.
+4.1 Reference Location — Prototype Hub
+Parameter
+Value
+Notes
+NGO Hub Name
+ReliefHub
+ Demo Centre
+Fictional name, real coordinates
+Hub Coordinates
+18.6298° N, 73.8553° E
+Pimpri-Chinchwad, Maharashtra
+Coverage Radius
+5 km
+Encompasses 25 sectors in 5x5 grid
+Grid Cell Size
+~1 km x 1 km
+Maps to real 
+neighbourhoods
+ in Pimpri-Chinchwad
+4.2 Synthetic Sector Grid — 5x5 Layout
+Each of the 25 sectors (A1–E5) is mapped to a real sub-locality within the Pimpri-Chinchwad area. Initial zone status is pre-assigned to demonstrate all three zone types for the demo.
+Sector
+Grid Pos
+Mapped Locality
+Initial Status
+Pop. Est.
+Donor Density
+A1
+Row 1, Col 1
+Bhosari
+ Industrial Zone – South
+SCARCITY
+6,200
+Low
+A2
+Row 1, Col 2
+Moshi – West
+NEUTRAL
+4,100
+Medium
+A3
+Row 1, Col 3
+Chikhali
+ – Central
+ABUNDANCE
+5,400
+High
+A4
+Row 1, Col 4
+Dighi – East
+NEUTRAL
+3,800
+Medium
+A5
+Row 1, Col 5
+Alandi Road Junction
+SCARCITY
+7,100
+Low
+B1
+Row 2, Col 1
+Pimpri Colony – North
+ABUNDANCE
+4,900
+High
+B2
+Row 2, Col 2
+Kasarwadi
+ – West
+NEUTRAL
+5,200
+Medium
+B3
+Row 2, Col 3
+Dapodi
+ – Central
+SCARCITY
+8,300
+Low
+B4
+Row 2, Col 4
+Bopkhel
+ – East
+ABUNDANCE
+3,600
+High
+B5
+Row 2, Col 5
+Khed
+ 
+Shivapur
+ Rd
+NEUTRAL
+4,400
+Medium
+C1–E5
+Rows 3-5
+Chinchwad, 
+Akurdi
+, 
+Nigdi
+, 
+Thergaon
+, 
+Wakad
+, 
+Hinjawadi
+ (W), Baner North etc.
+Mixed (7 Scarcity, 8 Neutral, 10 Abundance)
+Varies
+Varies
+Note: All 25 sectors with full 
+lat
+/
+lng
+ bounding boxes will be seeded via the 
+Firestore
+ seed script detailed in Phase 1 of the implementation plan.
+4.3 Synthetic Inventory — Initial Stock Levels
+The demo storehouse is pre-seeded with inventory levels designed to showcase different runway states across categories — some SAFE, some WARNING, some CRITICAL — so the Runway Dashboard is visually rich for the demo.
+SKU / Item
+Category
+Stock (units)
+Avg Daily Use
+Runway (days)
+Status
+Rice (5kg bag)
+CAT-01
+42
+8.5
+4.9
+CRITICAL
+Lentils (1kg)
+CAT-01
+210
+12.0
+17.5
+MONITOR
+First Aid Kits
+CAT-04
+18
+2.1
+8.6
+WARNING
+Soap Bars
+CAT-05
+55
+14.0
+3.9
+CRITICAL
+Tarpaulins (4x6m)
+CAT-02
+130
+1.8
+72.2
+SAFE
+Blankets
+CAT-03
+88
+3.5
+25.1
+MONITOR
+ORS Sachets
+CAT-04
+320
+25.0
+12.8
+WARNING
+Sanitary Pads (pack)
+CAT-05
+60
+9.0
+6.7
+CRITICAL
+Cooking Oil (1L)
+CAT-01
+180
+15.0
+12.0
+WARNING
+Solar Lanterns
+CAT-02
+45
+0.5
+90.0
+SAFE
+Seed Script
+ Requirement
+A Node.js 
+Firestore
+ seed script (/scripts/seed_firestore.js) must be created in Phase 1 to populate all 25 sector documents and all 30+ SKU inventory documents with the synthetic data above. This script is idempotent — running it twice does not create duplicate records.
+4.4 Synthetic Donor & Beneficiary Profiles
+Donors: 
+50 synthetic donor accounts pre-registered; each has 
+preferred_categories
+, 
+donation_history
+, and a registered drop-off sector for Ledger stock-in attribution — no FCM token required
+Beneficiaries: 
+100 synthetic beneficiary profiles across 8 Scarcity sectors; each has 
+sector_id
+, 
+needs_flags
+ per category, and 
+family_size
+NGO Admin: 
+1 superuser admin account with full 
+Firestore
+ read/write access
+5. Implementation Roadmap — 5-Phase Plan
+The project is structured across five sequential phases, each producing a testable deliverable. Total estimated development time: 10–12 weeks for a team of 3 (1 Flutter dev, 1 backend/Firebase dev, 1 AI/ML dev).
+Phase 1: Foundation (Weeks 1–2)
+Deliverable
+Working Flutter app shell with Firebase Auth (3 user roles), 
+Firestore
+ schema seeded with synthetic data, and a functional Inventory CRUD screen (The Ledger — read only).
+1.1 Flutter Project Setup
+Initialise
+: 
+flutter create 
+reliefhub_ai
+ with Material 3 theme; set up 
+pubspec.yaml
+ with all dependencies
+Dependencies: 
+firebase_core
+, 
+firebase_auth
+, 
+cloud_firestore
+, 
+firebase_messaging
+, 
+google_maps_flutter
+, 
+go_router
+, 
+riverpod
+ (state management), 
+fl_chart
+ (for runway charts)
+Folder structure: 
+lib/features
+/{
+auth, ledger, grid, scout, 
+replenisher};
+ lib/core
+/{
+theme, router, services}
+Material 3 Theme: 
+Brand 
+colours
+: Primary #1A56A0 (blue), Secondary #0D7377 (teal), Error #991B1B (red)
+1.2 Firebase Authentication — Role-Based
+Role
+Firestore
+ Custom Claim
+Permissions
+App Entry Point
+NGO Admin
+role: 'admin'
+Full CRUD on all collections
+Admin Dashboard (all 4 modules)
+Donor
+role: 'donor'
+Read active donation drives; write pledges and drop-off confirmations; read own donation history
+Donation Drive browse feed + Pledge screen + Profile
+1.3 
+Firestore
+ Schema 
+Initialisation
+Collections to create: 
+/inventory, /sectors, /
+donation_drives
+, /
+inventory_log
+, /users
+Seed script: 
+Node.js script (/scripts/seed_firestore.js) populates all 25 sectors with synthetic 
+lat
+/
+lng
+ bounding boxes and all 30 SKU inventory documents
+Security Rules: 
+Firestore
+ rules enforcing role-based access via custom claims
+Indexes: 
+Composite indexes: 
+inventory(
+category_id
+, 
+days_of_runway
+ ASC); sectors(
+zone_status
+)
+1.4 The Ledger — Phase 1 Screen
+Inventory List Screen: 
+Grouped by category; each item shows: SKU name, 
+current_stock
+, 
+days_of_runway
+, 
+colour
+-coded status badge
+SKU Detail Screen: 
+Full SKU data; stock-in and stock-out entry forms (write to 
+Firestore
+ + log to /
+inventory_log
+)
+Runway Summary Card: 
+Top-of-screen 
+widget:
+ counts of CRITICAL / WARNING / MONITOR / SAFE items
+Phase 2: The Map & Geo-Logic (Weeks 3–4)
+Deliverable
+Fully rendered 5x5 grid of 
+coloured
+ sector polygons on Google Maps, with each sector tappable to show its risk data. Sectors read live from 
+Firestore
+ synthetic data.
+2.1 Google Maps SDK Integration
+Initialise
+: 
+Add Google Maps API key to AndroidManifest.xml and 
+Info.plist
+; enable Maps SDK + Geocoding API in Google Cloud Console
+MapWidget
+: 
+GoogleMap
+ widget 
+centred
+ on NGO Hub coordinates; initial zoom level 13 (approximately 5km view)
+Map Overlays: 
+25 Polygon objects drawn using sector 
+bounding_box
+ coordinates from 
+Firestore
+; fill 
+colour
+ mapped to 
+zone_status
+2.2 5x5 Sector Grid Generation Logic
+Grid Calculation Algorithm
+Given: 
+hub_lat
+, 
+hub_lng
+, 
+radius_km
+ (default 5) Cell size = 
+radius_km
+ / 2.5 (gives 5 cells per axis)  For each sector (row 
+i
+ 0..4, 
+col
+ j 0..4):   
+sw_lat
+ = 
+hub_lat
+ - 
+radius_km
+/110 + (
+i
+ * 
+cell_km
+/110)   
+sw_lng
+ = 
+hub_lng
+ - 
+radius_km
+/110 + (j * 
+cell_km
+/110)   
+ne_lat
+ = 
+sw_lat
+ + 
+cell_km
+/110   
+ne_lng
+ = 
+sw_lng
+ + 
+cell_km
+/110   
+sector_id
+ = chr(65+j) + str(i+1)  // 'A1' through 'E5'  Note: 110 km ≈ 1 degree latitude. Longitude correction = 110 * cos(
+hub_lat_rad
+)
+2.3 Sector Interaction
+Tap to expand: 
+Tapping a sector polygon opens a bottom sheet 
+with:
+ sector label, 
+zone_status
+ badge, risk scores per category, 
+registered_beneficiaries
+ count, and active drive info
+Hub Marker: 
+Custom marker at NGO Hub 
+centre
+ with info window showing storehouse name and total CRITICAL item count
+Legend widget: 
+Floating card on map: Red = Scarcity | Grey = Neutral | Green = Abundance
+Phase 3: The Intelligence — Gemini Agent (Weeks 5–7)
+Deliverable
+Deployed Cloud Functions implementing The Scout agent (Gemini 1.5 Pro) that reads synthetic signals, produces risk assessments, writes them to 
+Firestore
+, and updates sector zone status and inventory runway in real time.
+3.1 Vertex AI Setup
+Enable APIs: 
+Vertex AI API, Cloud Functions API, Cloud Scheduler API in Google Cloud Console
+Service Account: 
+Create SA with roles: Vertex AI User, 
+Firestore
+ Admin, Cloud Functions Invoker
+Model: 
+Use gemini-1.5-pro-001 via @google-cloud/vertexai Node.js SDK; temperature 0.2 for deterministic JSON output
+3.2 Cloud Functions to Deploy
+Function Name
+Trigger
+Inputs
+Outputs / Side Effects
+runScoutAgent
+Cloud Scheduler (6h) or event webhook
+Firestore
+: consumption deltas, runway trajectories, check-in spikes, stock-out frequency per sector
+Writes risk JSON to /
+sectors/{id};
+ triggers 
+updateZoneStatus
+updateZoneStatus
+Firestore
+ 
+onWrite
+ /
+sectors/{
+id}
+New 
+risk_scores
+ map from Scout
+Updates 
+zone_status
+; sends FCM to Admin if CRITICAL/HIGH; triggers 
+createDonationDrive
+ only if MONITOR/WARNING
+recalcRunway
+Firestore
+ 
+onWrite
+ /
+inventory/{
+sku_id
+}
+Updated 
+current_stock
+ value
+Recalculates 
+days_of_runway
+; sets CRITICAL flag if < 7
+rollingAvgConsumption
+Cloud Scheduler (nightly)
+/
+inventory
+_log
+ 
+last
+ 14 days per SKU
+Updates 
+avg_daily_consumption
+ on each /
+inventory/{
+sku
+}
+manualScoutTrigger
+HTTPS callable (Admin only)
+Optional: forced category filter
+Same as 
+runScoutAgent
+; used for live demo triggers
+3.3 Admin Dashboard — Scout Intelligence Screen
+Last Scout Run: 
+Timestamp + summary: 'X sectors updated, Y new HIGH risks found'
+Risk Log: 
+Scrollable list of Gemini's reasoning text per sector per run
+Manual Trigger: 
+Button for Admin to force a Scout run (essential for live demo)
+Runway Chart: 
+fl_chart
+ bar chart: all SKUs sorted by runway days, 
+colour
+-coded
+Phase 4: Closing the Loop — Drives, Donor App & Admin Alerts (Weeks 8–9)
+Deliverable
+End-to-end working loop across both modes
+:  Mode
+ 1 (Immediate): Scout flags CRITICAL → Admin receives FCM → Staff logs stock-out on Ledger → Runway updates. Mode 2 (Proactive): Scout flags MONITOR/WARNING → Replenisher creates Drive → Donor browses feed and pledges → Staff logs stock-in on receipt → Runway updates → Drive marked FULFILLED.
+4.1 Replenisher Cloud Function
+createDonationDrive
+: 
+Triggered by 
+updateZoneStatus
+ when runway status is MONITOR or WARNING; calls Gemini to generate drive description and quantity targets; writes /
+donation_
+drives
+/{id};
+ does NOT send donor FCM
+expireDonationDrive
+: 
+Scheduled Cloud Function (runs daily); checks all ACTIVE drives past 
+their
+ 
+expires_at
+ timestamp; sets status → EXPIRED; sends FCM escalation alert to Admin
+fulfil check (
+onWrite
+): 
+Fires when /
+donation_
+drives
+/{
+id} 
+qty_received
+ updates; if 
+qty_received
+ >= 
+qty_needed
+, sets status → FULFILLED and notifies Admin via FCM
+4.2 Donor App Flow (Pull Model)
+Browse Drives: 
+Home screen shows all ACTIVE donation drives sorted by lowest runway days; each card shows item, qty remaining, days left in drive window
+Drive Detail: 
+Full drive view: Gemini-authored plain-language need description, item list with progress bars (
+qty_pledged
+ / 
+qty_needed
+), drop-off location on Google Maps
+Pledge Action: 
+Donor taps 'I can contribute', selects items and quantities; 
+Firestore
+ 
+qty_pledged
+ updates in real time — other donors see the updated need immediately
+Drop-off & Receipt: 
+Donor physically drops off at NGO Hub; Staff logs receipt via Ledger stock-in screen; 
+qty_received
+ increments; if threshold met, drive auto-closes
+4.3 Admin Alert System (FCM — Admin Only)
+CRITICAL stock alert: 
+Fired by 
+recalcRunway
+ when any SKU drops below 7-day runway; message includes SKU name, current stock, and recommended storehouse draw quantity
+New drive created: 
+Fired by 
+createDonationDrive
+; summary of drive items and runway context so Admin can monitor without opening the app
+Drive fulfilled: 
+Confirms stock has been received and runway restored; no action needed from Admin
+Drive expired unfulfilled: 
+Escalation alert: drive window closed with unmet need; Admin must decide whether to source from storehouse or extend window
+Phase 5: Refinement & Pitch (Weeks 10–12)
+Deliverable
+Polished Flutter app meeting Material 3 design excellence standards, a 3-minute demo video, technical documentation, and all Google Solution Challenge submission assets.
+5.1 UI/UX Polishing
+Onboarding flow: 
+3-screen intro explaining the closed loop; role selection; location permission request
+Animation: 
+Sector 
+colour
+ transitions animate smoothly when zone status changes (Flutter 
+AnimatedContainer
+)
+Accessibility: 
+Semantic labels on all map polygons; high-contrast mode support; min tap target 48x48dp
+Empty states: 
+Illustrated empty states for: no active 
+drives
+, all sectors SAFE, zero CRITICAL items
+Dark mode: 
+Full Material 3 dark theme support
+5.2 Demo Video Assets
+Script outline: 
+(0:00–0:30) Problem statement — crisis-moment donation drives don't work; NGOs need two modes; (0:30–1:00) Live demo of Sector Grid with 
+colour
+ zones; (1:00–1:40) Triggering Scout manually — 
+Firestore
+ updates in real-time, Admin FCM alert fires for CRITICAL item; (1:40–2:20) Replenisher creates proactive drive for MONITOR-level SKU; donor browses feed and pledges; Staff logs receipt; (2:20–3:00) Impact metrics dashboard — runway restored, drive fulfilled, Admin summary view
+Demo script: 
+Use the 
+manualScoutTrigger
+ function to force a live AI run during recording — guarantees a real-time Gemini response on camera
+Screen recording: 
+Use 
+scrcpy
+ or iOS QuickTime mirror; overlay Flutter DevTools for performance showcase
+5.3 Technical Documentation
+README.md: 
+Setup guide: Firebase project creation, API keys, seed script, and local Flutter run instructions
+Architecture diagram: 
+Lucidchart
+ / draw.io system diagram showing all Cloud Functions, 
+Firestore
+ triggers, and external API calls
+API reference: 
+Inline 
+dartdoc
+ comments on all public classes; Cloud Functions documented with input/output schemas
+Ethical AI note: 
+Document Gemini's role as decision-support tool (not autonomous actor); human Admin reviews all 
+HIGH-risk
+ flags before drives are made permanent
+6. USP & Competitive Differentiation
+6.1 Comparison with Existing Solutions
+Feature
+ReliefHub
+ AI
+FoodCloud
+Standard Inv. Tracker
+Generic NGO App
+Proactive scarcity prediction
+Yes (Gemini AI)
+No
+No
+No
+Geo-sectored zone mapping
+Yes (5x5 Grid)
+No
+No
+Limited
+Automated donation targeting
+Yes (Replenisher)
+Partial (bulk)
+No
+No
+Days of Runway calculation
+Yes (real-time)
+No
+Basic
+No
+Closed-loop resource system
+Yes (full loop)
+Partial
+No
+No
+Built-with-AI framework
+Yes (Vertex AI)
+No
+No
+No
+Local NGO scale focus
+Yes (single hub)
+City-wide
+Any
+Variable
+6.2 Unique Selling Propositions
+USP 1: The First Two-Mode Resource Loop for Local NGOs
+Unlike 
+FoodCloud
+ (which connects surplus to charities reactively) or standard inventory tools (which only track what has already been distributed), 
+ReliefHub
+ AI separates immediate response (Storehouse → Ledger) from proactive replenishment (Scout → Replenisher → Donor Feed). Crises are handled with what the NGO already has. Donation drives are reserved for windows where they can 
+actually work
+.
+USP 2: Gemini as Logistics Reasoner, Not Just Classifier
+Gemini 1.5 Pro is not just used for sentiment analysis — 
+it
+ reasons about inventory runway, geographic proximity, donation logistics, and campaign messaging in a single multi-modal prompt. This demonstrates genuine Build-with-AI integration.
+USP 3: Hyperlocal Geo-Intelligence at Zero Infrastructure Cost
+The 5x5 Grid system works entirely on Google Maps polygons and 
+Firestore
+ — no GIS servers, no spatial databases, no expensive infrastructure. A single NGO can deploy 
+ReliefHub
+ AI with a free-tier Firebase project.
+6.3 Impact Metrics — What the NGO Should Track
+Metric Name
+Definition
+Baseline Target
+SDG Link
+Scarcity Episodes Prevented
+Sectors that had HIGH risk but never reached zero stock
+> 80% of flagged sectors
+SDG 2.1
+Average Days of Runway
+Mean runway across all CRITICAL SKUs, measured monthly
+Increase from 5d to 14d
+SDG 2.C
+Donation Drive Fulfilment Rate
+% of proactive drives where 
+qty_received
+ >= 
+qty_needed
+ within the drive window
+> 70% within drive window
+SDG 12.3
+Surplus Waste Reduction
+% reduction in SKUs exceeding 90-day runway (over-donation)
+Reduce by 40%
+SDG 12.3
+Scout 
+Lead
+ Time
+Days between Scout flag and actual community-reported shortage
+> 7 days advance notice
+SDG 2.1
+Beneficiary Satisfaction Score
+In-app 1–5 rating after distribution event
+> 4.0 / 5.0
+SDG 2.1
+Admin Time Saved (
+hrs
+/week)
+Self-reported staff hours saved on manual tracking and comms
+> 8 
+hrs
+/week
+SDG 12 (efficiency)
+7. Risks & Mitigations
+Risk
+Severity
+Probability
+Mitigation
+Gemini API latency spikes during demo
+HIGH
+Medium
+Cache last Gemini output in 
+Firestore
+; display cached result if API timeout; 
+manualTrigger
+ pre-run before demo
+Google Maps API quota exceeded
+MEDIUM
+Low
+Use 
+Firestore
+-rendered polygon data (no tiles needed for sector grid); Maps SDK only used for basemap
+FCM notification delivery failure
+LOW
+Low
+Only Admin receives FCM; in-app Admin dashboard always shows current state as fallback; no donor experience is affected by FCM failure
+Synthetic data not representative enough
+LOW
+Medium
+Design seed script with statistically plausible consumption rates; cross-reference with published NGO distribution reports
+Gemini hallucinating risk assessments
+HIGH
+Low
+Use strict JSON output schema in prompt; Cloud Function validates JSON schema before writing to 
+Firestore
+; Admin review screen for all HIGH flags
+8. Submission Checklist — Google Solution Challenge 2026
+#
+Requirement
+Status / Owner
+1
+Flutter mobile app (Android APK or iOS TestFlight)
+Flutter Dev — Phase 5
+2
+Working demo on real device (not simulator)
+All team — Phase 5
+3
+3-minute demo video uploaded to YouTube (unlisted)
+PM — Phase 5
+4
+GitHub repository with README, setup guide, and architecture diagram
+All team — Phase 5
+5
+Vertex AI (Gemini) used as core AI feature — clearly demonstrated
+AI/ML Dev — Phase 3
+6
+At least 2 Google technologies 
+used
+ (Maps, Firebase, Earth Engine, etc.)
+All — confirmed (5 Google technologies)
+7
+SDG alignment clearly articulated with measurable impact metrics
+PM — Section 6.3 of PRD
+8
+Ethical AI considerations documented
+PM + AI Dev — Phase 5 docs
+Final Note
+Relief Hub
+ AI is purposefully scoped to a single NGO Hub and a 5km radius. This focus is a deliberate design 
+decision
+ 
+it 
+ensures the system is immediately deployable by a real NGO with minimal infrastructure, and the closed-loop logic is demonstrably testable within the constraints of the Solution Challenge format. Scaling to multi-hub, city-wide networks is the natural next phase post-competition.

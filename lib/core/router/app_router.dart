@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -8,6 +9,12 @@ import '../../features/ledger/screens/inventory_list_screen.dart';
 import '../../features/ledger/screens/sku_detail_screen.dart';
 import '../../features/ledger/screens/stock_update_screen.dart';
 import '../../features/scout/screens/grid_map_screen.dart';
+import '../../features/scout/screens/admin_dashboard_screen.dart';
+import '../../features/replenisher/screens/drive_list_screen.dart';
+import '../../features/replenisher/screens/drive_detail_screen.dart';
+import '../../features/replenisher/screens/pledge_screen.dart';
+import '../../features/replenisher/screens/donation_history_screen.dart';
+import '../../core/models/drive_model.dart';
 
 /// Route path constants.
 class AppRoutes {
@@ -21,18 +28,37 @@ class AppRoutes {
   static const scout      = '/scout';
   static const drives     = '/drives';
   static const driveDetail = '/drives/:driveId';
+  static const pledge     = '/drives/:driveId/pledge';
+  static const history    = '/history';
 }
 
-/// go_router configuration with role-based redirect.
+/// Bridges Riverpod's auth state stream to GoRouter's refreshListenable
+/// so the router re-evaluates its redirect whenever auth state changes.
+class _AuthChangeNotifier extends ChangeNotifier {
+  _AuthChangeNotifier(Ref ref) {
+    ref.listen(authStateProvider, (_, __) {
+      notifyListeners();
+    });
+  }
+}
+
+/// go_router configuration with reactive auth-based redirect.
 final routerProvider = Provider<GoRouter>((ref) {
+  final authChangeNotifier = _AuthChangeNotifier(ref);
+
   return GoRouter(
     initialLocation: AppRoutes.login,
+    refreshListenable: authChangeNotifier,
     redirect: (context, state) {
-      final authState = ref.read(authStateProvider);
-      final isLoggedIn = authState.when(
+      final authAsync = ref.read(authStateProvider);
+
+      // While Firebase Auth is still initializing, don't redirect.
+      if (authAsync.isLoading) return null;
+
+      final isLoggedIn = authAsync.when(
         data: (user) => user != null,
         loading: () => false,
-        error: (e, st) => false,
+        error: (_, __) => false,
       );
       final isAuthRoute = state.matchedLocation == AppRoutes.login ||
           state.matchedLocation == AppRoutes.register;
@@ -40,8 +66,33 @@ final routerProvider = Provider<GoRouter>((ref) {
       // Not logged in → go to login (unless already on auth route).
       if (!isLoggedIn && !isAuthRoute) return AppRoutes.login;
 
-      // Logged in but on auth route → go to role-based home.
-      if (isLoggedIn && isAuthRoute) return AppRoutes.ledger;
+      // Logged in but on auth route → go to role-specific home.
+      if (isLoggedIn && isAuthRoute) {
+        final profileAsync = ref.read(userProfileProvider);
+        if (profileAsync.isLoading) return null;
+        if (profileAsync.value?.role == 'donor') return AppRoutes.drives;
+        return AppRoutes.ledger;
+      }
+
+      // Role-based guarding
+      final profileAsync = ref.read(userProfileProvider);
+      if (!profileAsync.isLoading) {
+        final role = profileAsync.value?.role;
+
+        // Donor route restriction
+        if (role == 'donor') {
+          final isDonorRoute = state.matchedLocation.startsWith(AppRoutes.drives) || 
+                               state.matchedLocation == AppRoutes.history;
+          if (!isDonorRoute) {
+            return AppRoutes.drives;
+          }
+        }
+
+        // Admin route restriction
+        if (state.matchedLocation == AppRoutes.scout && role != 'admin') {
+          return AppRoutes.ledger; // Kick non-admins back to ledger
+        }
+      }
 
       return null;
     },
@@ -82,6 +133,32 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.grid,
         builder: (context, state) => const GridMapScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.scout,
+        builder: (context, state) => const AdminDashboardScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.drives,
+        builder: (context, state) => const DriveListScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.driveDetail,
+        builder: (context, state) {
+          final drive = state.extra as DriveModel;
+          return DriveDetailScreen(drive: drive);
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.pledge,
+        builder: (context, state) {
+          final drive = state.extra as DriveModel;
+          return PledgeScreen(drive: drive);
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.history,
+        builder: (context, state) => const DonationHistoryScreen(),
       ),
     ],
   );

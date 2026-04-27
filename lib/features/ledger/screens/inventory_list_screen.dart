@@ -82,7 +82,7 @@ class InventoryListScreen extends ConsumerWidget {
         itemBuilder: (_, i) => Padding(
           padding: const EdgeInsets.only(bottom: 12),
           child: Container(height: 72, decoration: BoxDecoration(
-              color: Colors.white, borderRadius: BorderRadius.circular(12))),
+              color: Colors.white, borderRadius: BorderRadius.circular(8))),
         ),
       ),
     );
@@ -121,7 +121,7 @@ class _SummaryRow extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
             color: isActive ? fg : bg,
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(8),
             border: isActive ? Border.all(color: fg, width: 2) : null,
           ),
           child: Column(children: [
@@ -144,14 +144,14 @@ class _SkuTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       color: Colors.white,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(8),
       child: InkWell(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(8),
         onTap: () => context.go('/ledger/${sku.skuId}'),
         child: Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(8),
             border: Border.all(color: kLightGray),
           ),
           child: Row(children: [

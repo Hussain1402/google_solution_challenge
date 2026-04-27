@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import '../../../core/theme/colors.dart';
 import '../../../core/models/sku_model.dart';
 import '../../../core/models/inventory_log_model.dart';
@@ -79,11 +80,13 @@ class _StockUpdateScreenState extends ConsumerState<StockUpdateScreen> {
 
       final db = FirestoreService();
 
-      // Update inventory stock
+      // Update inventory stock (also recalculates runway)
       await db.updateStock(
         skuId: widget.skuId,
         newStock: newStock,
         updatedBy: uid,
+        avgDailyConsumption: _sku!.avgDailyConsumption,
+        reservedStock: _sku!.reservedStock,
       );
 
       // Create inventory log entry
@@ -98,6 +101,20 @@ class _StockUpdateScreenState extends ConsumerState<StockUpdateScreen> {
         notes: _notesCtrl.text.isEmpty ? null : _notesCtrl.text.trim(),
       );
       await db.addInventoryLog(log);
+
+      // Trigger the Two-Mode Response Logic via Cloud Function
+      // This checks if a proactive drive needs to be created or a critical alert sent
+      try {
+        final callable = FirebaseFunctions.instance.httpsCallable(
+          'checkRunwayAndCreateDrive',
+          options: HttpsCallableOptions(timeout: const Duration(seconds: 300)),
+        );
+        final response = await callable.call({'skuId': widget.skuId});
+        final action = response.data['action'] ?? 'UNKNOWN';
+        print('[REPLENISHER] Cloud Function response: $action');
+      } catch (e) {
+        print('[REPLENISHER] checkRunwayAndCreateDrive failed (non-blocking): $e');
+      }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

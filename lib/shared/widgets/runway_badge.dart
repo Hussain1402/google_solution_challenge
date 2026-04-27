@@ -20,16 +20,25 @@ class RunwayBadge extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
         color: bg,
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(4),
       ),
-      child: Text(
-        '$label • ${daysOfRunway.toStringAsFixed(0)}d',
-        style: TextStyle(
-          color: fg,
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-          letterSpacing: 0.3,
-        ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (status == RunwayStatus.critical) ...[
+            Icon(Icons.warning_rounded, size: 14, color: fg),
+            const SizedBox(width: 4),
+          ],
+          Text(
+            '$label • ${daysOfRunway.toStringAsFixed(0)}d',
+            style: TextStyle(
+              color: fg,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.3,
+            ),
+          ),
+        ],
       ),
     );
   }

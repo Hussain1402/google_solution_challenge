@@ -40,11 +40,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
 
   Future<void> _handleLogin() async {
     if (!_formKey.currentState!.validate()) return;
-    final success = await ref.read(authNotifierProvider.notifier).signIn(
+    await ref.read(authNotifierProvider.notifier).signIn(
       email: _emailCtrl.text.trim(),
       password: _passCtrl.text,
     );
-    if (success && mounted) context.go(AppRoutes.ledger);
   }
 
   @override
@@ -67,7 +66,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                       width: 72, height: 72,
                       decoration: BoxDecoration(
                         gradient: const LinearGradient(colors: [kBlue, kTeal], begin: Alignment.topLeft, end: Alignment.bottomRight),
-                        borderRadius: BorderRadius.circular(18),
+                        borderRadius: BorderRadius.circular(8),
                       ),
                       child: const Icon(Icons.hub, color: Colors.white, size: 36),
                     ),

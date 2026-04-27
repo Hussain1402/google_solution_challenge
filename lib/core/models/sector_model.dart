@@ -6,7 +6,7 @@ class SectorModel {
   final String label;
   final double centerLat;
   final double centerLng;
-  final Map<String, dynamic> boundingBox; // { ne: {lat, lng}, sw: {lat, lng} }
+  final List<Map<String, double>> polygonPoints; // [{lat, lng}, ...]
   final String zoneStatus; // "SCARCITY" | "NEUTRAL" | "ABUNDANCE"
   final Map<String, String> riskScores; // { CAT_01: "HIGH"|"MEDIUM"|"LOW", ... }
   final int populationEstimate;
@@ -20,7 +20,7 @@ class SectorModel {
     required this.label,
     required this.centerLat,
     required this.centerLng,
-    required this.boundingBox,
+    required this.polygonPoints,
     required this.zoneStatus,
     required this.riskScores,
     required this.populationEstimate,
@@ -32,12 +32,23 @@ class SectorModel {
 
   factory SectorModel.fromFirestore(DocumentSnapshot<Map<String, dynamic>> doc) {
     final d = doc.data()!;
+    
+    // Parse polygon points from Firestore array
+    final rawPoints = d['polygon_points'] as List<dynamic>? ?? [];
+    final parsedPoints = rawPoints.map((point) {
+      final p = point as Map<String, dynamic>;
+      return {
+        'lat': (p['lat'] as num).toDouble(),
+        'lng': (p['lng'] as num).toDouble(),
+      };
+    }).toList();
+
     return SectorModel(
       sectorId: d['sector_id'] as String,
       label: d['label'] as String,
       centerLat: (d['center_lat'] as num).toDouble(),
       centerLng: (d['center_lng'] as num).toDouble(),
-      boundingBox: Map<String, dynamic>.from(d['bounding_box'] as Map),
+      polygonPoints: parsedPoints,
       zoneStatus: d['zone_status'] as String,
       riskScores: Map<String, String>.from(d['risk_scores'] as Map),
       populationEstimate: (d['population_estimate'] as num).toInt(),
@@ -53,7 +64,7 @@ class SectorModel {
     'label': label,
     'center_lat': centerLat,
     'center_lng': centerLng,
-    'bounding_box': boundingBox,
+    'polygon_points': polygonPoints,
     'zone_status': zoneStatus,
     'risk_scores': riskScores,
     'population_estimate': populationEstimate,

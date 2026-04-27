@@ -14,4 +14,19 @@ const { onSchedule } = require("firebase-functions/v2/scheduler");
 const { onCall } = require("firebase-functions/v2/https");
 const { onDocumentWritten } = require("firebase-functions/v2/firestore");
 
-// Exports will be added as each function is implemented in Phase 3-4.
+const scoutFunctions = require("./scout");
+const ledgerFunctions = require("./ledger");
+const replenisherFunctions = require("./replenisher");
+
+// Scout exports
+exports.runScoutAgent = scoutFunctions.runScoutAgent;
+exports.manualScoutTrigger = scoutFunctions.manualScoutTrigger;
+exports.updateZoneStatus = scoutFunctions.updateZoneStatus;
+
+// Ledger exports
+exports.recalcRunway = ledgerFunctions.recalcRunway;
+exports.rollingAvgConsumption = ledgerFunctions.rollingAvgConsumption;
+
+// Replenisher exports
+exports.expireDonationDrive = replenisherFunctions.expireDonationDrive;
+exports.checkRunwayAndCreateDrive = replenisherFunctions.checkRunwayAndCreateDrive;

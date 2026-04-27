@@ -18,30 +18,53 @@ const { initializeApp, cert } = require("firebase-admin/app");
 const { getFirestore, Timestamp } = require("firebase-admin/firestore");
 
 // ─── Initialize Firebase Admin ────────────────────────────────────────────
-// Uses Application Default Credentials. Set GOOGLE_APPLICATION_CREDENTIALS
-// to your service account key JSON, or run on a GCP-authed machine.
-initializeApp();
+// Uses service-account.json if present in the root directory, 
+// otherwise falls back to Application Default Credentials.
+let appOptions = {};
+try {
+  const serviceAccount = require("../service-account.json");
+  appOptions = { credential: cert(serviceAccount) };
+  console.log("Using service-account.json for authentication...");
+} catch (e) {
+  console.log("No service-account.json found. Falling back to Application Default Credentials.");
+}
+
+initializeApp(appOptions);
 const db = getFirestore();
 
 // ─── Constants from PRD ───────────────────────────────────────────────────
 const HUB_LAT = 18.6298;
 const HUB_LNG = 73.8553;
-const RADIUS_KM = 5;
-const CELL_KM = RADIUS_KM / 2.5; // 2km per cell
 const LAT_PER_KM = 1 / 110;
 const LNG_PER_KM = 1 / (110 * Math.cos(HUB_LAT * Math.PI / 180));
 
-// ─── Locality names for sectors ───────────────────────────────────────────
-const LOCALITY_NAMES = {
-  A1: "Pimpri Colony",      B1: "Chinchwad East",    C1: "Kasarwadi",
-  D1: "Pimpri Sandas",      E1: "Dapodi",            A2: "Nigdi Pradhikaran",
-  B2: "Akurdi",             C2: "Thermax Chowk",     D2: "Bhosari MIDC",
-  E2: "Dighi",              A3: "Ravet",             B3: "Punawale",
-  C3: "Wakad West",         D3: "Pimple Saudagar",   E3: "Pimple Nilakh",
-  A4: "Tathawade",          B4: "Hinjewadi Phase 1", C4: "Hinjewadi Phase 2",
-  D4: "Wakad East",         E4: "Aundh",             A5: "Baner",
-  B5: "Balewadi",           C5: "Sus",               D5: "Pashan",
-  E5: "Kothrud",
+// ─── Locality names & rough coordinates for 25 sectors ─────────────────────
+const LOCALITIES = {
+  A1: { name: "Pimpri Colony", lat: 18.627, lng: 73.800 },
+  B1: { name: "Chinchwad East", lat: 18.635, lng: 73.790 },
+  C1: { name: "Kasarwadi", lat: 18.605, lng: 73.820 },
+  D1: { name: "Pimpri Sandas", lat: 18.610, lng: 73.810 },
+  E1: { name: "Dapodi", lat: 18.580, lng: 73.835 },
+  A2: { name: "Nigdi Pradhikaran", lat: 18.650, lng: 73.765 },
+  B2: { name: "Akurdi", lat: 18.645, lng: 73.780 },
+  C2: { name: "Thermax Chowk", lat: 18.660, lng: 73.790 },
+  D2: { name: "Bhosari MIDC", lat: 18.625, lng: 73.835 },
+  E2: { name: "Dighi", lat: 18.610, lng: 73.865 },
+  A3: { name: "Ravet", lat: 18.640, lng: 73.740 },
+  B3: { name: "Punawale", lat: 18.620, lng: 73.745 },
+  C3: { name: "Wakad West", lat: 18.595, lng: 73.760 },
+  D3: { name: "Pimple Saudagar", lat: 18.595, lng: 73.790 },
+  E3: { name: "Pimple Nilakh", lat: 18.580, lng: 73.780 },
+  A4: { name: "Tathawade", lat: 18.610, lng: 73.750 },
+  B4: { name: "Hinjewadi Phase 1", lat: 18.580, lng: 73.740 },
+  C4: { name: "Hinjewadi Phase 2", lat: 18.585, lng: 73.710 },
+  D4: { name: "Wakad East", lat: 18.600, lng: 73.775 },
+  E4: { name: "Aundh", lat: 18.560, lng: 73.805 },
+  A5: { name: "Baner", lat: 18.560, lng: 73.780 },
+  B5: { name: "Balewadi", lat: 18.575, lng: 73.770 },
+  C5: { name: "Sus", lat: 18.545, lng: 73.750 },
+  D5: { name: "Pashan", lat: 18.540, lng: 73.790 },
+  E5: { name: "Kothrud", lat: 18.505, lng: 73.810 },
 };
 
 // ─── Zone status distribution: 7 SCARCITY, 8 NEUTRAL, 10 ABUNDANCE ──────
@@ -68,50 +91,58 @@ function riskScoresForZone(zoneStatus) {
 }
 
 // ─── Seed Sectors ─────────────────────────────────────────────────────────
+// Generates an organic polygon around a center point (low vertex count for latency)
+function generateOrganicPolygon(centerLat, centerLng, baseRadiusKm = 1.2) {
+  const points = [];
+  const numPoints = 6; // Low number of vertices to keep map render very fast
+  
+  for (let i = 0; i < numPoints; i++) {
+    const angleRad = (i / numPoints) * 2 * Math.PI;
+    // Add jitter to radius (+/- 30%) to make it look organic/irregular
+    const jitter = 0.7 + Math.random() * 0.6; 
+    const rKm = baseRadiusKm * jitter;
+    
+    points.push({
+      lat: centerLat + (rKm * LAT_PER_KM) * Math.sin(angleRad),
+      lng: centerLng + (rKm * LNG_PER_KM) * Math.cos(angleRad)
+    });
+  }
+  return points;
+}
+
 async function seedSectors() {
-  console.log("Seeding 25 sectors...");
+  console.log("Seeding 25 organic sectors...");
   const batch = db.batch();
 
-  for (let row = 0; row < 5; row++) {
-    for (let col = 0; col < 5; col++) {
-      const sectorId = String.fromCharCode(65 + col) + (row + 1);
-      const ref = db.collection("sectors").doc(sectorId);
+  for (const [sectorId, data] of Object.entries(LOCALITIES)) {
+    const ref = db.collection("sectors").doc(sectorId);
 
-      const existing = await ref.get();
-      if (existing.exists) {
-        console.log(`  ✓ ${sectorId} already exists, skipping.`);
-        continue;
-      }
-
-      const swLat = HUB_LAT - (RADIUS_KM * LAT_PER_KM) + (row * CELL_KM * LAT_PER_KM);
-      const swLng = HUB_LNG - (RADIUS_KM * LNG_PER_KM) + (col * CELL_KM * LNG_PER_KM);
-      const neLat = swLat + CELL_KM * LAT_PER_KM;
-      const neLng = swLng + CELL_KM * LNG_PER_KM;
-      const centerLat = (swLat + neLat) / 2;
-      const centerLng = (swLng + neLng) / 2;
-
-      const zoneStatus = ZONE_STATUS_MAP[sectorId];
-
-      batch.set(ref, {
-        sector_id: sectorId,
-        label: LOCALITY_NAMES[sectorId],
-        center_lat: centerLat,
-        center_lng: centerLng,
-        bounding_box: {
-          ne: { lat: neLat, lng: neLng },
-          sw: { lat: swLat, lng: swLng },
-        },
-        zone_status: zoneStatus,
-        risk_scores: riskScoresForZone(zoneStatus),
-        population_estimate: 5000 + Math.floor(Math.random() * 15000),
-        registered_beneficiaries: 200 + Math.floor(Math.random() * 800),
-        registered_donors: 50 + Math.floor(Math.random() * 150),
-        last_scout_run: Timestamp.now(),
-        active_drive_id: null,
-      });
-
-      console.log(`  + ${sectorId} (${LOCALITY_NAMES[sectorId]}) → ${zoneStatus}`);
+    const existing = await ref.get();
+    if (existing.exists) {
+      console.log(`  ✓ ${sectorId} already exists, skipping.`);
+      continue;
     }
+
+    const zoneStatus = ZONE_STATUS_MAP[sectorId];
+    // Organic polygon generation
+    const polygonPoints = generateOrganicPolygon(data.lat, data.lng, 1.4); // ~1.4km radius
+
+    batch.set(ref, {
+      sector_id: sectorId,
+      label: data.name,
+      center_lat: data.lat,
+      center_lng: data.lng,
+      polygon_points: polygonPoints,
+      zone_status: zoneStatus,
+      risk_scores: riskScoresForZone(zoneStatus),
+      population_estimate: 5000 + Math.floor(Math.random() * 15000),
+      registered_beneficiaries: 200 + Math.floor(Math.random() * 800),
+      registered_donors: 50 + Math.floor(Math.random() * 150),
+      last_scout_run: Timestamp.now(),
+      active_drive_id: null,
+    });
+
+    console.log(`  + ${sectorId} (${data.name}) → ${zoneStatus}`);
   }
 
   await batch.commit();

@@ -72,7 +72,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
                       width: 72, height: 72,
                       decoration: BoxDecoration(
                         gradient: const LinearGradient(colors: [kBlue, kTeal], begin: Alignment.topLeft, end: Alignment.bottomRight),
-                        borderRadius: BorderRadius.circular(18),
+                        borderRadius: BorderRadius.circular(8),
                       ),
                       child: const Icon(Icons.person_add, color: Colors.white, size: 36),
                     ),
