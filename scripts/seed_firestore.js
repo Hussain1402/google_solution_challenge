@@ -16,6 +16,7 @@
 
 const { initializeApp, cert } = require("firebase-admin/app");
 const { getFirestore, Timestamp } = require("firebase-admin/firestore");
+const { getAuth } = require("firebase-admin/auth");
 
 // ─── Initialize Firebase Admin ────────────────────────────────────────────
 // Uses service-account.json if present in the root directory, 
@@ -328,7 +329,10 @@ async function seedDrives() {
 
 // ─── Seed Users ───────────────────────────────────────────────────────────
 async function seedUsers() {
-  console.log("Seeding 3 user documents...");
+  console.log("Seeding 6 user documents (1 admin, 4 staff, 1 donor)...");
+
+  const auth = getAuth();
+  const DEFAULT_PASSWORD = "Relief2026!";
 
   const users = [
     {
@@ -352,6 +356,36 @@ async function seedUsers() {
       created_at: Timestamp.now(),
     },
     {
+      uid: "staff-002",
+      display_name: "Meena Patil",
+      email: "staff2@reliefhub.ai",
+      role: "staff",
+      preferred_categories: [],
+      donation_history: [],
+      fcm_token: null,
+      created_at: Timestamp.now(),
+    },
+    {
+      uid: "staff-003",
+      display_name: "Vikram Singh",
+      email: "staff3@reliefhub.ai",
+      role: "staff",
+      preferred_categories: [],
+      donation_history: [],
+      fcm_token: null,
+      created_at: Timestamp.now(),
+    },
+    {
+      uid: "staff-004",
+      display_name: "Sunita Rao",
+      email: "staff4@reliefhub.ai",
+      role: "staff",
+      preferred_categories: [],
+      donation_history: [],
+      fcm_token: null,
+      created_at: Timestamp.now(),
+    },
+    {
       uid: "donor-001",
       display_name: "Anita Desai",
       email: "donor@reliefhub.ai",
@@ -364,10 +398,29 @@ async function seedUsers() {
   ];
 
   for (const user of users) {
+    // --- Firebase Auth account ---
+    try {
+      await auth.getUser(user.uid);
+      console.log(`  ✓ Auth ${user.uid} already exists.`);
+    } catch (e) {
+      if (e.code === "auth/user-not-found") {
+        await auth.createUser({
+          uid: user.uid,
+          email: user.email,
+          password: DEFAULT_PASSWORD,
+          displayName: user.display_name,
+        });
+        console.log(`  + Auth ${user.uid} created (${user.email} / ${DEFAULT_PASSWORD})`);
+      } else {
+        console.warn(`  ⚠ Auth lookup failed for ${user.uid}: ${e.message}`);
+      }
+    }
+
+    // --- Firestore document ---
     const ref = db.collection("users").doc(user.uid);
     const existing = await ref.get();
     if (existing.exists) {
-      console.log(`  ✓ ${user.uid} already exists, skipping.`);
+      console.log(`  ✓ ${user.uid} Firestore doc already exists, skipping.`);
       continue;
     }
     await ref.set(user);

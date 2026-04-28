@@ -16,6 +16,14 @@ const kGray       = Color(0xFF424751); // On Surface Variant
 const kMidGray    = Color(0xFF6B7280); // Neutral Grey
 const kLightGray  = Color(0xFFE2E2E9); // Surface Container Highest
 
+// Stitch Specific Exact Colors
+const kSurfaceBg           = Color(0xFFF9FAFB);
+const kSurfaceContainerLow = Color(0xFFF3F3FA);
+const kSurfaceContainerLowest = Color(0xFFFFFFFF);
+const kOutlineVariant      = Color(0xFFC2C6D3);
+const kOutline             = Color(0xFF737782);
+const kOnSurface           = Color(0xFF191C20);
+
 /// WARNING-level runway colours
 const kWarningBg   = Color(0xFFFEF3C7);
 const kWarningText = Color(0xFFF59E0B);

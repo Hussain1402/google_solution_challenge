@@ -127,7 +127,7 @@ class _SkuDetailBody extends StatelessWidget {
         const SizedBox(height: 12),
         Row(children: [
           _InfoCard('Runway', '${sku.daysOfRunway.toStringAsFixed(1)} days',
-              runwayBgColor(status), runwayFgColor(status)),
+              runwayColor(status).withOpacity(0.1), runwayColor(status)),
           const SizedBox(width: 12),
           _InfoCard('Location', sku.locationInStorehouse, kLightGray, kGray),
         ]),

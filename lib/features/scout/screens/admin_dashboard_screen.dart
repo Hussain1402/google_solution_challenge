@@ -206,85 +206,104 @@ class _SectorRiskCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final highRisks = sector.riskScores.entries.where((e) => e.value == 'HIGH').toList();
 
-    return Card(
-      elevation: 0,
-      color: const Color(0xFF1E1E1E), // Terminal-like background
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
-        side: const BorderSide(color: Color(0xFF333333), width: 1),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [kBlue, Color(0xFF1E3A8A)], 
+          begin: Alignment.topLeft, 
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+      clipBehavior: Clip.antiAlias,
+      child: Stack(
+        children: [
+          Positioned(
+            right: -40,
+            bottom: -40,
+            child: Icon(Icons.inventory_2, size: 200, color: Colors.white.withOpacity(0.1)),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  '> ${sector.sectorId} - ${sector.label}',
-                  style: const TextStyle(
-                    fontFamily: 'monospace',
-                    fontSize: 14, 
-                    fontWeight: FontWeight.bold, 
-                    color: Colors.greenAccent,
-                  ),
-                ),
-                const Spacer(),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: _getStatusBgColor(sector.zoneStatus),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text(
-                    sector.zoneStatus,
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      color: _getStatusTextColor(sector.zoneStatus),
+                Row(
+                  children: [
+                    const Icon(Icons.auto_awesome, size: 14, color: kLightBlue),
+                    const SizedBox(width: 8),
+                    Text(
+                      'AI SCOUT LOG - ${sector.sectorId}',
+                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: kLightBlue, letterSpacing: 0.5),
                     ),
+                    const Spacer(),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        sector.zoneStatus,
+                        style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  highRisks.isNotEmpty 
+                      ? 'Urgent Supply Gap Detected in ${sector.label}'
+                      : 'Operations Normal in ${sector.label}',
+                  style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
+                ),
+                const SizedBox(height: 16),
+                if (highRisks.isNotEmpty) ...[
+                  Text(
+                    'High depletion rate in ${highRisks.map((e) => _formatCategory(e.key)).join(', ')} suggests critical scarcity. Recommend immediate rerouting from central hub.',
+                    style: TextStyle(fontSize: 14, color: Colors.blue.shade100),
                   ),
+                ] else ...[
+                  Text(
+                    'No critical supply gaps detected. Current inventory levels are sufficient for projected needs.',
+                    style: TextStyle(fontSize: 14, color: Colors.blue.shade100),
+                  ),
+                ],
+                const SizedBox(height: 24),
+                Row(
+                  children: [
+                    ElevatedButton(
+                      onPressed: () {},
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        foregroundColor: kBlue,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        minimumSize: const Size(0, 40),
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        elevation: 0,
+                      ),
+                      child: const Text('Apply Recommendation', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                    ),
+                    const SizedBox(width: 12),
+                    OutlinedButton(
+                      onPressed: () {},
+                      style: OutlinedButton.styleFrom(
+                        backgroundColor: Colors.white.withOpacity(0.1),
+                        foregroundColor: Colors.white,
+                        side: BorderSide(color: Colors.white.withOpacity(0.2)),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        minimumSize: const Size(0, 40),
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                      ),
+                      child: const Text('Details', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                    ),
+                  ],
                 ),
               ],
             ),
-            const SizedBox(height: 12),
-            if (highRisks.isNotEmpty) ...[
-              const Text('HIGH_RISK_CATEGORIES_DETECTED:', style: TextStyle(fontFamily: 'monospace', fontSize: 11, color: Colors.white70)),
-              const SizedBox(height: 6),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: highRisks.map((entry) {
-                  return Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: kLightRed,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.warning_amber_rounded, size: 14, color: kRed),
-                        const SizedBox(width: 4),
-                        Text(
-                          _formatCategory(entry.key),
-                          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: kRed),
-                        ),
-                      ],
-                    ),
-                  );
-                }).toList(),
-              ),
-            ] else ...[
-              const Text('SYS.OK: No high risk categories detected.', style: TextStyle(fontFamily: 'monospace', fontSize: 11, color: Colors.greenAccent)),
-            ],
-            const SizedBox(height: 12),
-            Text(
-              '[LAST_ASSESSED: ${sector.lastScoutRun.toLocal().toString().split('.')[0]}]',
-              style: const TextStyle(fontFamily: 'monospace', fontSize: 10, color: Colors.white54),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

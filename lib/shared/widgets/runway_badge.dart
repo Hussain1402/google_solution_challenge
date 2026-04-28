@@ -8,33 +8,40 @@ class RunwayBadge extends StatelessWidget {
 
   const RunwayBadge({super.key, required this.daysOfRunway});
 
+  IconData _getIcon(RunwayStatus status) {
+    switch (status) {
+      case RunwayStatus.critical: return Icons.report;
+      case RunwayStatus.warning: return Icons.history;
+      case RunwayStatus.monitor: return Icons.history;
+      case RunwayStatus.safe: return Icons.verified;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final status = getRunwayStatus(daysOfRunway);
     final label = runwayStatusLabel(status);
-    final bg = runwayBgColor(status);
-    final fg = runwayFgColor(status);
+    final baseColor = runwayColor(status);
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(4),
+        color: baseColor.withOpacity(0.1),
+        border: Border.all(color: baseColor.withOpacity(0.2)),
+        borderRadius: BorderRadius.circular(9999),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (status == RunwayStatus.critical) ...[
-            Icon(Icons.warning_rounded, size: 14, color: fg),
-            const SizedBox(width: 4),
-          ],
+          Icon(_getIcon(status), size: 14, color: baseColor),
+          const SizedBox(width: 8),
           Text(
-            '$label • ${daysOfRunway.toStringAsFixed(0)}d',
+            '${daysOfRunway.toStringAsFixed(0)} DAYS RUNWAY',
             style: TextStyle(
-              color: fg,
+              color: baseColor,
               fontSize: 12,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w900, // Black
               letterSpacing: 0.3,
             ),
           ),

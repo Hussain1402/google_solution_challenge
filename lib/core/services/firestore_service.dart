@@ -78,6 +78,18 @@ class FirestoreService {
         );
   }
 
+  /// Update a sector's zone_status and risk_scores (Staff/Admin only).
+  Future<void> updateSector({
+    required String sectorId,
+    required String zoneStatus,
+    required Map<String, String> riskScores,
+  }) async {
+    await _db.collection('sectors').doc(sectorId).update({
+      'zone_status': zoneStatus,
+      'risk_scores': riskScores,
+    });
+  }
+
   // ───────────────────── DONATION DRIVES ─────────────────────
 
   /// Stream active drives sorted by ascending runway (most urgent first).

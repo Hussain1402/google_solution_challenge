@@ -77,11 +77,14 @@ class _DriveCard extends StatelessWidget {
     final progress = target['qty_pledged'] / target['qty_needed'];
     final progressClamped = progress > 1.0 ? 1.0 : progress;
 
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
-        side: const BorderSide(color: kLightGray),
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: kOutlineVariant),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 4, offset: const Offset(0, 2)),
+        ],
       ),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
@@ -90,72 +93,78 @@ class _DriveCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
-              height: 120,
-              color: kLightBlue,
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(20),
+              decoration: const BoxDecoration(
+                border: Border(bottom: BorderSide(color: kOutlineVariant, width: 0.5)),
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
-                          color: kBlue,
-                          borderRadius: BorderRadius.circular(8),
+                          color: kSurfaceContainerLow,
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: kOutlineVariant, width: 0.5),
                         ),
                         child: const Text(
-                          'PROACTIVE',
-                          style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                          'PROACTIVE DRIVE',
+                          style: TextStyle(color: kBlue, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 0.5),
                         ),
                       ),
                       const Spacer(),
-                      const Icon(Icons.timer_outlined, size: 16, color: kBlue),
+                      const Icon(Icons.timer_outlined, size: 14, color: kWarningText),
                       const SizedBox(width: 4),
                       Text(
                         'Ends in ${drive.expiresAt.difference(DateTime.now()).inDays} days',
-                        style: const TextStyle(fontSize: 12, color: kBlue, fontWeight: FontWeight.bold),
+                        style: const TextStyle(fontSize: 12, color: kWarningText, fontWeight: FontWeight.bold),
                       ),
                     ],
                   ),
-                  const Spacer(),
+                  const SizedBox(height: 16),
                   Text(
-                    'Item: ${target['sku_id']}',
-                    style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: kBlue),
+                    '${target['sku_id'].toString().replaceAll('_', ' ').toUpperCase()} CAMPAIGN',
+                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: kOnSurface, letterSpacing: -0.5),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    drive.geminiDescription,
+                    style: const TextStyle(fontSize: 13, color: kMidGray, height: 1.4),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),
             ),
             Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(20),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    drive.geminiDescription,
-                    style: const TextStyle(fontSize: 14, color: kGray),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 16),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        '${target['qty_pledged']} Pledged',
-                        style: const TextStyle(fontWeight: FontWeight.bold, color: kTeal),
+                      Row(
+                        children: [
+                          const Icon(Icons.inventory_2, size: 14, color: kTeal),
+                          const SizedBox(width: 6),
+                          Text(
+                            '${target['qty_pledged']} / ${target['qty_needed']} Pledged',
+                            style: const TextStyle(fontWeight: FontWeight.bold, color: kTeal, fontSize: 13),
+                          ),
+                        ],
                       ),
                       Text(
                         '${(progressClamped * 100).toInt()}%',
-                        style: const TextStyle(color: kMidGray),
+                        style: const TextStyle(color: kMidGray, fontWeight: FontWeight.bold, fontSize: 13),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 12),
                   LinearProgressIndicator(
                     value: progressClamped,
-                    backgroundColor: kLightGray,
+                    backgroundColor: kSurfaceContainerLow,
                     color: kTeal,
                     minHeight: 8,
                     borderRadius: BorderRadius.circular(4),

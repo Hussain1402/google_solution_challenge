@@ -3,6 +3,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../../../core/models/user_model.dart';
 import '../../../core/services/firestore_service.dart';
 import '../../../core/services/fcm_service.dart';
+import '../../../core/services/remote_config_service.dart';
+import 'package:firebase_remote_config/firebase_remote_config.dart';
 
 /// Auth state stream.
 final authStateProvider = StreamProvider<User?>((ref) {
@@ -46,9 +48,29 @@ class AuthNotifier extends Notifier<AuthState> {
     required String password,
     required String displayName,
     required String role,
+    String? adminKey,
   }) async {
     state = const AuthState(isLoading: true);
     try {
+      // Security Check: If trying to register as admin, verify the private key
+      String finalRole = role;
+      if (role == 'admin') {
+        final rc = ref.read(remoteConfigServiceProvider);
+        // Ensure we have latest config (optional, already activated in main, but let's be safe)
+        try {
+          await FirebaseRemoteConfig.instance.fetch();
+          await FirebaseRemoteConfig.instance.activate();
+        } catch (_) {} 
+        
+        final expectedKey = rc.adminPrivateKey;
+        if (adminKey != expectedKey) {
+          state = const AuthState(errorMessage: 'Invalid Admin Private Key. Registration blocked.');
+          return false;
+        }
+      } else if (role == 'staff') {
+        // Just in case someone tries to spoof role: 'admin' via staff selection
+        finalRole = 'staff';
+      }
       print('[AUTH] Attempting registration for: $email with role: $role');
       final cred = await FirebaseAuth.instance.createUserWithEmailAndPassword(
         email: email, password: password,
@@ -58,17 +80,17 @@ class AuthNotifier extends Notifier<AuthState> {
         uid: cred.user!.uid,
         displayName: displayName,
         email: email,
-        role: role,
+        role: finalRole,
         createdAt: DateTime.now(),
       );
       await FirestoreService().setUser(user);
       print('[AUTH] Firestore user profile written successfully');
       
-      if (role == 'admin') {
+      if (finalRole == 'admin') {
         await FCMService().init(cred.user!.uid);
       }
 
-      if (role == 'donor') {
+      if (finalRole == 'donor') {
         await FirebaseAuth.instance.signOut();
       }
 

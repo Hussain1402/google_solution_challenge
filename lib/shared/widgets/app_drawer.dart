@@ -18,11 +18,32 @@ class AppDrawer extends ConsumerWidget {
       child: ListView(
         padding: EdgeInsets.zero,
         children: [
-          const DrawerHeader(
-            decoration: BoxDecoration(color: kBlue),
-            child: Text(
-              'ReliefHub AI',
-              style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
+          DrawerHeader(
+            decoration: const BoxDecoration(color: kBlue),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Image.asset(
+                  'assets/images/logo.png',
+                  height: 60,
+                  fit: BoxFit.contain,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Image.network(
+                      'icons/ChatGPT Image Apr 28, 2026, 06_36_22 PM.png',
+                      height: 60,
+                      fit: BoxFit.contain,
+                      errorBuilder: (context, err, st) {
+                        return const Text('Logo Load Error', style: TextStyle(color: Colors.white, fontSize: 10));
+                      },
+                    );
+                  },
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'ReliefHub AI',
+                  style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+              ],
             ),
           ),
           if (!isDonor) ...[

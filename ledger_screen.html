@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>ReliefHub AI - The Ledger</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "background": "#f9f9ff",
+                    "on-primary-fixed": "#001b3d",
+                    "primary-fixed": "#d6e3ff",
+                    "primary-container": "#1a56a0",
+                    "secondary-fixed": "#9df0f4",
+                    "on-surface": "#191c20",
+                    "surface-background": "#F9FAFB",
+                    "surface-tint": "#265ea8",
+                    "on-secondary-fixed-variant": "#004f52",
+                    "on-background": "#191c20",
+                    "outline-variant": "#c2c6d3",
+                    "secondary": "#00696d",
+                    "on-primary": "#ffffff",
+                    "on-secondary": "#ffffff",
+                    "surface-container-lowest": "#ffffff",
+                    "surface": "#f9f9ff",
+                    "surface-container-highest": "#e2e2e9",
+                    "neutral-grey": "#6B7280",
+                    "tertiary-fixed": "#ffdcc6",
+                    "warning-amber": "#F59E0B",
+                    "on-primary-fixed-variant": "#00468c",
+                    "surface-container-high": "#e7e8ef",
+                    "on-error": "#ffffff",
+                    "tertiary-fixed-dim": "#ffb786",
+                    "inverse-surface": "#2e3036",
+                    "on-secondary-fixed": "#002021",
+                    "inverse-on-surface": "#f0f0f7",
+                    "surface-container": "#ededf4",
+                    "on-error-container": "#93000a",
+                    "inverse-primary": "#a9c7ff",
+                    "on-tertiary": "#ffffff",
+                    "urgent-red": "#991B1B",
+                    "on-secondary-container": "#037074",
+                    "error": "#ba1a1a",
+                    "surface-dim": "#d9d9e0",
+                    "tertiary-container": "#8a4300",
+                    "outline": "#737782",
+                    "secondary-fixed-dim": "#81d4d8",
+                    "on-surface-variant": "#424751",
+                    "primary": "#003e7e",
+                    "surface-variant": "#e2e2e9",
+                    "safe-green": "#10B981",
+                    "surface-container-low": "#f3f3fa",
+                    "error-container": "#ffdad6",
+                    "on-primary-gradient": "linear-gradient(135deg, #1A56A0 0%, #0D7377 100%)",
+                    "secondary-container": "#9df0f4",
+                    "surface-bright": "#f9f9ff",
+                    "on-tertiary-container": "#ffbf95",
+                    "on-tertiary-fixed-variant": "#723600",
+                    "primary-fixed-dim": "#a9c7ff",
+                    "tertiary": "#673000",
+                    "on-primary-container": "#b3cdff",
+                    "on-tertiary-fixed": "#311300"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            }
+          }
+        }
+      }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; background-color: #f9f9ff; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .shadow-lg-top { box-shadow: 0 -10px 15px -3px rgba(0, 0, 0, 0.1), 0 -4px 6px -2px rgba(0, 0, 0, 0.05); }
+    </style>
+</head>
+<body class="bg-background text-on-background antialiased flex min-h-screen">
+<!-- SideNavBar (Persistent on Desktop) -->
+<aside class="hidden md:flex flex-col h-screen sticky top-0 p-4 gap-2 bg-white dark:bg-gray-950 border-r border-gray-200 dark:border-gray-800 w-64 z-50">
+<div class="flex items-center gap-3 px-2 mb-6">
+<div class="w-10 h-10 rounded-lg bg-primary-container flex items-center justify-center">
+<span class="material-symbols-outlined text-white" data-icon="hub">hub</span>
+</div>
+<div>
+<h1 class="text-lg font-black text-blue-800 dark:text-blue-200">NGO Operations</h1>
+<p class="text-[10px] uppercase tracking-wider text-neutral-grey font-bold">ReliefHub AI Admin</p>
+</div>
+</div>
+<nav class="flex-1 flex flex-col gap-1">
+<!-- Active Navigation State: The Ledger -->
+<a class="flex items-center gap-3 px-3 py-2.5 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg transition-all scale-95 duration-75" href="#">
+<span class="material-symbols-outlined" data-icon="inventory_2">inventory_2</span>
+<span class="font-medium text-sm">The Ledger</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 text-gray-600 dark:text-gray-400 hover:text-blue-600 hover:bg-gray-50 dark:hover:bg-gray-900 rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="map">map</span>
+<span class="font-medium text-sm">The Grid</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 text-gray-600 dark:text-gray-400 hover:text-blue-600 hover:bg-gray-50 dark:hover:bg-gray-900 rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="insights">insights</span>
+<span class="font-medium text-sm">The Scout</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 text-gray-600 dark:text-gray-400 hover:text-blue-600 hover:bg-gray-50 dark:hover:bg-gray-900 rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="campaign">campaign</span>
+<span class="font-medium text-sm">Active Drives</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 text-gray-600 dark:text-gray-400 hover:text-blue-600 hover:bg-gray-50 dark:hover:bg-gray-900 rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="history">history</span>
+<span class="font-medium text-sm">History</span>
+</a>
+</nav>
+<button class="mt-4 w-full bg-primary py-3 rounded-full text-white font-bold text-sm flex items-center justify-center gap-2 hover:opacity-90 active:scale-95 transition-all">
+<span class="material-symbols-outlined text-sm" data-icon="add">add</span>
+            Start New Drive
+        </button>
+<div class="mt-auto border-t border-gray-100 pt-4 flex flex-col gap-1">
+<a class="flex items-center gap-3 px-3 py-2 text-gray-600 hover:text-blue-600 rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="help_outline">help_outline</span>
+<span class="text-sm">Support</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-error hover:bg-error-container/20 rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="logout">logout</span>
+<span class="text-sm font-semibold">Sign Out</span>
+</a>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 flex flex-col min-w-0">
+<!-- TopAppBar -->
+<header class="flex justify-between items-center h-16 px-4 md:px-8 w-full sticky top-0 z-50 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
+<div class="flex items-center gap-4">
+<span class="text-xl font-bold tracking-tighter text-blue-900 dark:text-blue-100">ReliefHub AI</span>
+<div class="hidden md:flex gap-6 ml-8">
+<a class="text-blue-700 dark:text-blue-400 font-semibold border-b-2 border-blue-700 text-sm" href="#">The Ledger</a>
+<a class="text-gray-500 dark:text-gray-400 text-sm hover:text-blue-700 transition-colors" href="#">Operations</a>
+<a class="text-gray-500 dark:text-gray-400 text-sm hover:text-blue-700 transition-colors" href="#">Resources</a>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<div class="relative hidden sm:block">
+<input class="bg-surface-container border-none rounded-full px-4 py-1.5 text-sm w-64 focus:ring-2 focus:ring-primary-container" placeholder="Search Ledger..." type="text"/>
+<span class="material-symbols-outlined absolute right-3 top-1.5 text-outline text-lg" data-icon="search">search</span>
+</div>
+<button class="p-2 text-on-surface-variant hover:bg-gray-100 rounded-full transition-colors active:opacity-80">
+<span class="material-symbols-outlined" data-icon="notifications_active">notifications_active</span>
+</button>
+<button class="p-2 text-on-surface-variant hover:bg-gray-100 rounded-full transition-colors active:opacity-80">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+</button>
+<img alt="User profile" class="w-8 h-8 rounded-full border border-gray-200 ml-2" data-alt="Close-up portrait of a professional male administrator in a clean office environment with soft natural lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCP7Mq1YT2BPnFJxs9h5FqnK172LMi9HO2FA9_Kk7oZ9kJoG6o1bzVw3pNr1ObP_6VLjrMfc2y7-B-1a_WmqVM3JvBJTS4ubMReTMj4wN54Gasxcx264qhNMDSWDTo9cw8S_FrjSDgJipkTEFyhnCAIgULl0eNfsDPNhgU8N6RB2KT7EWphH8If0-PFGdggsMmtlceysJxYoQL-2pSpEl_vEs2AkwpBKDOjumue5LeR2XK3VJoLSVYL3P7V-q_CHO1VO55AXR35GSg"/>
+</div>
+</header>
+<!-- Content Canvas -->
+<div class="p-4 md:p-8 space-y-6 max-w-7xl mx-auto w-full">
+<!-- Summary Stats (Top Bar) -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+<div class="bg-white p-4 rounded-xl border border-gray-200 flex flex-col gap-1 shadow-sm">
+<div class="flex items-center gap-2 text-urgent-red font-bold text-xs uppercase tracking-wider">
+<span class="material-symbols-outlined text-sm" data-icon="warning">warning</span>
+                        Critical
+                    </div>
+<div class="text-3xl font-extrabold text-on-surface">04</div>
+<div class="text-xs text-neutral-grey">Below 7d Runway</div>
+</div>
+<div class="bg-white p-4 rounded-xl border border-gray-200 flex flex-col gap-1 shadow-sm">
+<div class="flex items-center gap-2 text-warning-amber font-bold text-xs uppercase tracking-wider">
+<span class="material-symbols-outlined text-sm" data-icon="error_outline">error_outline</span>
+                        Warning
+                    </div>
+<div class="text-3xl font-extrabold text-on-surface">12</div>
+<div class="text-xs text-neutral-grey">7-14d Runway</div>
+</div>
+<div class="bg-white p-4 rounded-xl border border-gray-200 flex flex-col gap-1 shadow-sm">
+<div class="flex items-center gap-2 text-blue-600 font-bold text-xs uppercase tracking-wider">
+<span class="material-symbols-outlined text-sm" data-icon="visibility">visibility</span>
+                        Monitor
+                    </div>
+<div class="text-3xl font-extrabold text-on-surface">28</div>
+<div class="text-xs text-neutral-grey">15-30d Runway</div>
+</div>
+<div class="bg-white p-4 rounded-xl border border-gray-200 flex flex-col gap-1 shadow-sm">
+<div class="flex items-center gap-2 text-safe-green font-bold text-xs uppercase tracking-wider">
+<span class="material-symbols-outlined text-sm" data-icon="check_circle">check_circle</span>
+                        Safe
+                    </div>
+<div class="text-3xl font-extrabold text-on-surface">156</div>
+<div class="text-xs text-neutral-grey">30d+ Runway</div>
+</div>
+</div>
+<!-- Ledger Table Container -->
+<div class="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
+<!-- Table Header Actions -->
+<div class="p-4 border-b border-gray-100 flex flex-wrap gap-4 items-center justify-between">
+<div>
+<h2 class="text-lg font-bold text-on-surface">Global Inventory Ledger</h2>
+<p class="text-sm text-neutral-grey">Showing live SKU metrics and automated runway forecasts</p>
+</div>
+<div class="flex gap-2">
+<button class="bg-primary-container text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 hover:bg-primary transition-colors">
+<span class="material-symbols-outlined text-sm" data-icon="arrow_downward">arrow_downward</span>
+                            Stock In
+                        </button>
+<button class="border border-primary-container text-primary-container px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 hover:bg-primary-container/5 transition-colors">
+<span class="material-symbols-outlined text-sm" data-icon="arrow_upward">arrow_upward</span>
+                            Stock Out
+                        </button>
+</div>
+</div>
+<!-- Group: CAT-01 Basic Necessities -->
+<div class="bg-surface-container-low px-4 py-2 flex items-center gap-2 border-b border-gray-200">
+<span class="material-symbols-outlined text-primary text-lg" data-icon="category">category</span>
+<span class="font-bold text-xs uppercase tracking-widest text-primary">CAT-01 Basic Necessities</span>
+</div>
+<!-- Ledger Rows -->
+<div class="divide-y divide-gray-100">
+<!-- Row 1: Critical -->
+<div class="flex items-center p-4 hover:bg-gray-50 transition-colors group">
+<div class="flex-1 flex items-center gap-4">
+<div class="w-10 h-10 rounded bg-gray-100 flex items-center justify-center text-gray-400 group-hover:bg-blue-100 group-hover:text-blue-600 transition-colors">
+<span class="material-symbols-outlined" data-icon="water_drop">water_drop</span>
+</div>
+<div>
+<p class="text-sm font-bold text-on-surface">Potable Water (20L Jug)</p>
+<p class="text-[11px] text-neutral-grey font-medium uppercase">SKU: WAT-20L-BASE</p>
+</div>
+</div>
+<div class="hidden md:flex flex-col items-end px-8">
+<span class="text-sm font-bold text-on-surface">1,240 Units</span>
+<span class="text-[11px] text-neutral-grey">Stock Level: 12%</span>
+</div>
+<div class="flex items-center gap-6">
+<div class="bg-urgent-red/10 border border-urgent-red/20 text-urgent-red px-3 py-1.5 rounded-full flex items-center gap-2">
+<span class="material-symbols-outlined text-sm" data-icon="report" style="font-variation-settings: 'FILL' 1;">report</span>
+<span class="text-xs font-black">4 DAYS RUNWAY</span>
+</div>
+<button class="p-1 hover:bg-gray-200 rounded text-gray-400"><span class="material-symbols-outlined" data-icon="more_vert">more_vert</span></button>
+</div>
+</div>
+<!-- Row 2: Warning -->
+<div class="flex items-center p-4 hover:bg-gray-50 transition-colors group">
+<div class="flex-1 flex items-center gap-4">
+<div class="w-10 h-10 rounded bg-gray-100 flex items-center justify-center text-gray-400 group-hover:bg-blue-100 group-hover:text-blue-600 transition-colors">
+<span class="material-symbols-outlined" data-icon="medical_services">medical_services</span>
+</div>
+<div>
+<p class="text-sm font-bold text-on-surface">First Aid Kit (Standard)</p>
+<p class="text-[11px] text-neutral-grey font-medium uppercase">SKU: MED-KIT-STD</p>
+</div>
+</div>
+<div class="hidden md:flex flex-col items-end px-8">
+<span class="text-sm font-bold text-on-surface">450 Units</span>
+<span class="text-[11px] text-neutral-grey">Stock Level: 42%</span>
+</div>
+<div class="flex items-center gap-6">
+<div class="bg-warning-amber/10 border border-warning-amber/20 text-warning-amber px-3 py-1.5 rounded-full flex items-center gap-2">
+<span class="material-symbols-outlined text-sm" data-icon="history" style="font-variation-settings: 'FILL' 1;">history</span>
+<span class="text-xs font-black">18 DAYS RUNWAY</span>
+</div>
+<button class="p-1 hover:bg-gray-200 rounded text-gray-400"><span class="material-symbols-outlined" data-icon="more_vert">more_vert</span></button>
+</div>
+</div>
+<!-- Row 3: Safe -->
+<div class="flex items-center p-4 hover:bg-gray-50 transition-colors group">
+<div class="flex-1 flex items-center gap-4">
+<div class="w-10 h-10 rounded bg-gray-100 flex items-center justify-center text-gray-400 group-hover:bg-blue-100 group-hover:text-blue-600 transition-colors">
+<span class="material-symbols-outlined" data-icon="rice_bowl">rice_bowl</span>
+</div>
+<div>
+<p class="text-sm font-bold text-on-surface">Emergency Rice Rations (5kg)</p>
+<p class="text-[11px] text-neutral-grey font-medium uppercase">SKU: FOD-RIC-05K</p>
+</div>
+</div>
+<div class="hidden md:flex flex-col items-end px-8">
+<span class="text-sm font-bold text-on-surface">8,900 Units</span>
+<span class="text-[11px] text-neutral-grey">Stock Level: 92%</span>
+</div>
+<div class="flex items-center gap-6">
+<div class="bg-safe-green/10 border border-safe-green/20 text-safe-green px-3 py-1.5 rounded-full flex items-center gap-2">
+<span class="material-symbols-outlined text-sm" data-icon="verified" style="font-variation-settings: 'FILL' 1;">verified</span>
+<span class="text-xs font-black">124 DAYS RUNWAY</span>
+</div>
+<button class="p-1 hover:bg-gray-200 rounded text-gray-400"><span class="material-symbols-outlined" data-icon="more_vert">more_vert</span></button>
+</div>
+</div>
+</div>
+<!-- Group: CAT-02 Hygiene & Sanitation -->
+<div class="bg-surface-container-low px-4 py-2 flex items-center gap-2 border-b border-t border-gray-200">
+<span class="material-symbols-outlined text-primary text-lg" data-icon="sanitizer">sanitizer</span>
+<span class="font-bold text-xs uppercase tracking-widest text-primary">CAT-02 Hygiene &amp; Sanitation</span>
+</div>
+<div class="divide-y divide-gray-100">
+<!-- Row 4: Monitor -->
+<div class="flex items-center p-4 hover:bg-gray-50 transition-colors group">
+<div class="flex-1 flex items-center gap-4">
+<div class="w-10 h-10 rounded bg-gray-100 flex items-center justify-center text-gray-400 group-hover:bg-blue-100 group-hover:text-blue-600 transition-colors">
+<span class="material-symbols-outlined" data-icon="clean_hands">clean_hands</span>
+</div>
+<div>
+<p class="text-sm font-bold text-on-surface">Hand Sanitizer (500ml)</p>
+<p class="text-[11px] text-neutral-grey font-medium uppercase">SKU: HYG-SAN-500</p>
+</div>
+</div>
+<div class="hidden md:flex flex-col items-end px-8">
+<span class="text-sm font-bold text-on-surface">1,800 Units</span>
+<span class="text-[11px] text-neutral-grey">Stock Level: 58%</span>
+</div>
+<div class="flex items-center gap-6">
+<div class="bg-blue-100 border border-blue-200 text-blue-800 px-3 py-1.5 rounded-full flex items-center gap-2">
+<span class="material-symbols-outlined text-sm" data-icon="analytics" style="font-variation-settings: 'FILL' 1;">analytics</span>
+<span class="text-xs font-black">24 DAYS RUNWAY</span>
+</div>
+<button class="p-1 hover:bg-gray-200 rounded text-gray-400"><span class="material-symbols-outlined" data-icon="more_vert">more_vert</span></button>
+</div>
+</div>
+</div>
+</div>
+<!-- Intelligence Briefing Section (Bento Style) -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+<div class="lg:col-span-2 bg-gradient-to-br from-primary to-blue-900 rounded-2xl p-6 text-white flex flex-col justify-between relative overflow-hidden">
+<div class="relative z-10">
+<div class="flex items-center gap-2 text-primary-fixed font-bold text-xs uppercase mb-2">
+<span class="material-symbols-outlined text-sm" data-icon="auto_awesome">auto_awesome</span>
+                            AI Scout Log
+                        </div>
+<h3 class="text-2xl font-bold mb-4">Urgent Supply Gap Detected in Sector-7</h3>
+<p class="text-blue-100 text-sm max-w-md mb-6">Increased consumption rate of "Potable Water" (+14% WoW) in the northern camps suggests a depletion within 48 hours. Recommend rerouting 500 units from central hub.</p>
+<div class="flex gap-3">
+<button class="bg-white text-primary px-4 py-2 rounded-lg text-sm font-bold hover:bg-blue-50 transition-colors">Apply Recommendation</button>
+<button class="bg-white/10 text-white border border-white/20 px-4 py-2 rounded-lg text-sm font-bold hover:bg-white/20 transition-colors">Details</button>
+</div>
+</div>
+<!-- Decorative Element -->
+<div class="absolute -right-10 -bottom-10 opacity-10">
+<span class="material-symbols-outlined text-[200px]" data-icon="inventory_2">inventory_2</span>
+</div>
+</div>
+<div class="bg-white rounded-2xl border border-gray-200 p-6 flex flex-col">
+<h3 class="font-bold text-on-surface mb-4">Recent Logistics</h3>
+<div class="space-y-4 flex-1">
+<div class="flex gap-3">
+<div class="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-green-700">
+<span class="material-symbols-outlined text-sm" data-icon="arrow_downward">arrow_downward</span>
+</div>
+<div>
+<p class="text-sm font-bold text-on-surface">+2,000 Rice Rations</p>
+<p class="text-[11px] text-neutral-grey">2 hours ago • Regional Hub A</p>
+</div>
+</div>
+<div class="flex gap-3">
+<div class="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center text-red-700">
+<span class="material-symbols-outlined text-sm" data-icon="arrow_upward">arrow_upward</span>
+</div>
+<div>
+<p class="text-sm font-bold text-on-surface">-150 First Aid Kits</p>
+<p class="text-[11px] text-neutral-grey">4 hours ago • Mobile Clinic 3</p>
+</div>
+</div>
+<div class="flex gap-3">
+<div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-700">
+<span class="material-symbols-outlined text-sm" data-icon="local_shipping">local_shipping</span>
+</div>
+<div>
+<p class="text-sm font-bold text-on-surface">Transit: 4,000 Water Jugs</p>
+<p class="text-[11px] text-neutral-grey">Expected in 4h • Port Logistics</p>
+</div>
+</div>
+</div>
+<button class="mt-4 text-primary text-xs font-bold text-center hover:underline">View All Activities</button>
+</div>
+</div>
+</div>
+<!-- Spacer for mobile nav -->
+<div class="h-20 md:hidden"></div>
+</main>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-safe h-16 md:hidden bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border-t border-gray-200 dark:border-gray-800 shadow-lg-top">
+<a class="flex flex-col items-center justify-center bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-100 rounded-xl px-3 py-1.5 active:scale-90 transition-transform tap-highlight-transparent" href="#">
+<span class="material-symbols-outlined" data-icon="home">home</span>
+<span class="text-[10px] font-medium font-inter">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-gray-500 dark:text-gray-400 px-3 py-1.5 active:scale-90 transition-transform tap-highlight-transparent active:bg-gray-100" href="#">
+<span class="material-symbols-outlined" data-icon="explore">explore</span>
+<span class="text-[10px] font-medium font-inter">Map</span>
+</a>
+<a class="flex flex-col items-center justify-center text-gray-500 dark:text-gray-400 px-3 py-1.5 active:scale-90 transition-transform tap-highlight-transparent active:bg-gray-100" href="#">
+<span class="material-symbols-outlined" data-icon="analytics">analytics</span>
+<span class="text-[10px] font-medium font-inter">Scout</span>
+</a>
+<a class="flex flex-col items-center justify-center text-gray-500 dark:text-gray-400 px-3 py-1.5 active:scale-90 transition-transform tap-highlight-transparent active:bg-gray-100" href="#">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+<span class="text-[10px] font-medium font-inter">Profile</span>
+</a>
+</nav>
+</body></html>

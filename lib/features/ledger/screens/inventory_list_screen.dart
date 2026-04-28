@@ -10,6 +10,7 @@ import '../../../shared/widgets/category_icon.dart';
 import '../../../shared/widgets/app_drawer.dart';
 import '../../../features/auth/providers/auth_provider.dart';
 import '../providers/inventory_provider.dart';
+import 'stock_update_screen.dart';
 
 class InventoryListScreen extends ConsumerWidget {
   const InventoryListScreen({super.key});
@@ -58,11 +59,44 @@ class InventoryListScreen extends ConsumerWidget {
               error: (e, _) => _ErrorState(error: '$e'),
               data: (items) {
                 if (items.isEmpty) return _EmptyState(activeFilter: activeFilter);
-                return ListView.separated(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: items.length,
-                  separatorBuilder: (_, i) => const SizedBox(height: 10),
-                  itemBuilder: (_, i) => _SkuTile(sku: items[i]),
+                return Container(
+                  margin: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: kOutlineVariant),
+                    boxShadow: [
+                      BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 4, offset: const Offset(0, 2)),
+                    ],
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                        decoration: const BoxDecoration(
+                          color: kSurfaceContainerLow,
+                          border: Border(bottom: BorderSide(color: kOutlineVariant)),
+                        ),
+                        child: Row(
+                          children: [
+                            const Text('INVENTORY ITEMS', style: TextStyle(color: kBlue, fontSize: 12, fontWeight: FontWeight.w800, letterSpacing: 1.2)),
+                            const Spacer(),
+                            Text('${items.length} ITEMS', style: TextStyle(color: kMidGray, fontSize: 12, fontWeight: FontWeight.bold)),
+                          ],
+                        ),
+                      ),
+                      Expanded(
+                        child: ListView.separated(
+                          padding: EdgeInsets.zero,
+                          itemCount: items.length,
+                          separatorBuilder: (_, i) => const Divider(height: 1, color: kOutlineVariant, thickness: 0.5),
+                          itemBuilder: (_, i) => _SkuTile(sku: items[i]),
+                        ),
+                      ),
+                    ],
+                  ),
                 );
               },
             ),
@@ -98,37 +132,128 @@ class _SummaryRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
       child: Row(children: [
-        _chip('CRITICAL', summary[RunwayStatus.critical]!, kLightRed, kRed, RunwayStatus.critical),
+        _chip('CRITICAL', summary[RunwayStatus.critical] ?? 0, runwayColor(RunwayStatus.critical), RunwayStatus.critical),
         const SizedBox(width: 8),
-        _chip('WARNING', summary[RunwayStatus.warning]!, kWarningBg, kWarningText, RunwayStatus.warning),
+        _chip('WARNING', summary[RunwayStatus.warning] ?? 0, runwayColor(RunwayStatus.warning), RunwayStatus.warning),
         const SizedBox(width: 8),
-        _chip('MONITOR', summary[RunwayStatus.monitor]!, kLightAmb, kAmber, RunwayStatus.monitor),
+        _chip('MONITOR', summary[RunwayStatus.monitor] ?? 0, runwayColor(RunwayStatus.monitor), RunwayStatus.monitor),
         const SizedBox(width: 8),
-        _chip('SAFE', summary[RunwayStatus.safe]!, kLightGreen, kGreen, RunwayStatus.safe),
+        _chip('SAFE', summary[RunwayStatus.safe] ?? 0, runwayColor(RunwayStatus.safe), RunwayStatus.safe),
       ]),
     );
   }
 
-  Widget _chip(String label, int count, Color bg, Color fg, RunwayStatus status) {
+  Widget _chip(String label, int count, Color baseColor, RunwayStatus status) {
     final isActive = activeFilter == status;
     return Expanded(
       child: GestureDetector(
         onTap: () => ref.read(runwayFilterProvider.notifier).toggle(status),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(vertical: 10),
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
           decoration: BoxDecoration(
-            color: isActive ? fg : bg,
-            borderRadius: BorderRadius.circular(8),
-            border: isActive ? Border.all(color: fg, width: 2) : null,
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: isActive ? baseColor : kOutlineVariant, width: isActive ? 2 : 1),
+            boxShadow: [
+              if (!isActive) BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 4, offset: const Offset(0, 2)),
+              if (isActive) BoxShadow(color: baseColor.withOpacity(0.1), blurRadius: 8, offset: const Offset(0, 4)),
+            ],
           ),
-          child: Column(children: [
-            Text('$count', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700,
-                color: isActive ? Colors.white : fg)),
-            Text(label, style: TextStyle(fontSize: 9, fontWeight: FontWeight.w600,
-                color: isActive ? Colors.white70 : fg, letterSpacing: 0.5)),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(child: Text(label, style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: kMidGray, letterSpacing: 0.5), maxLines: 1, overflow: TextOverflow.ellipsis)),
+                  Container(
+                    width: 20, height: 20,
+                    decoration: BoxDecoration(
+                      color: baseColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    alignment: Alignment.center,
+                    child: Icon(
+                      status == RunwayStatus.critical ? Icons.report :
+                      status == RunwayStatus.safe ? Icons.verified : Icons.history,
+                      size: 12, color: baseColor,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text('$count', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: kOnSurface)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SkuTile extends ConsumerWidget {
+  final dynamic sku;
+  const _SkuTile({required this.sku});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final userProfile = ref.watch(userProfileProvider);
+    final isStaffOrAdmin = userProfile.value?.role == 'staff' || userProfile.value?.role == 'admin';
+
+    return Material(
+      color: Colors.white,
+      child: InkWell(
+        onTap: () => context.go('/ledger/${sku.skuId}'),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Row(children: [
+            Container(
+              width: 40, height: 40,
+              decoration: BoxDecoration(
+                color: kSurfaceContainerLow,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              alignment: Alignment.center,
+              child: CategoryIcon(categoryId: sku.categoryId),
+            ),
+            const SizedBox(width: 14),
+            Expanded(child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(sku.skuName, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: kOnSurface)),
+                const SizedBox(height: 4),
+                Text('${sku.skuId.length > 8 ? sku.skuId.substring(0, 8).toUpperCase() : sku.skuId.toUpperCase()} • ${sku.currentStock} ${sku.unit} • ${sku.categoryName}',
+                    style: const TextStyle(fontSize: 11, color: kMidGray, fontWeight: FontWeight.w500, letterSpacing: 0.5)),
+              ],
+            )),
+            if (isStaffOrAdmin) ...[
+              _StockActionButton(
+                icon: Icons.add_circle_outline,
+                color: kGreen,
+                tooltip: 'Stock In',
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => StockUpdateScreen(skuId: sku.skuId, eventType: 'STOCK_IN'),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 4),
+              _StockActionButton(
+                icon: Icons.remove_circle_outline,
+                color: kAmber,
+                tooltip: 'Stock Out',
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => StockUpdateScreen(skuId: sku.skuId, eventType: 'STOCK_OUT'),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+            ],
+            RunwayBadge(daysOfRunway: sku.daysOfRunway),
           ]),
         ),
       ),
@@ -136,38 +261,29 @@ class _SummaryRow extends StatelessWidget {
   }
 }
 
-class _SkuTile extends StatelessWidget {
-  final dynamic sku;
-  const _SkuTile({required this.sku});
+class _StockActionButton extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final String tooltip;
+  final VoidCallback onTap;
+  const _StockActionButton({required this.icon, required this.color, required this.tooltip, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(8),
+    return Tooltip(
+      message: tooltip,
       child: InkWell(
-        borderRadius: BorderRadius.circular(8),
-        onTap: () => context.go('/ledger/${sku.skuId}'),
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(6),
         child: Container(
-          padding: const EdgeInsets.all(14),
+          width: 32, height: 32,
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: kLightGray),
+            color: color.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(color: color.withOpacity(0.3), width: 1),
           ),
-          child: Row(children: [
-            CategoryIcon(categoryId: sku.categoryId),
-            const SizedBox(width: 12),
-            Expanded(child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(sku.skuName, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: kGray)),
-                const SizedBox(height: 3),
-                Text('${sku.currentStock} ${sku.unit} • ${sku.categoryName}',
-                    style: TextStyle(fontSize: 12, color: kMidGray)),
-              ],
-            )),
-            RunwayBadge(daysOfRunway: sku.daysOfRunway),
-          ]),
+          alignment: Alignment.center,
+          child: Icon(icon, size: 18, color: color),
         ),
       ),
     );
