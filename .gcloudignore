@@ -1,0 +1,6 @@
+# Gcloud ignore
+.git/
+.dart_tool/
+.pub/
+.pub-cache/
+**/node_modules/
